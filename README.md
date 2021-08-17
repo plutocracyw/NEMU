@@ -3,6 +3,9 @@
 
 =======
 # NEMU2020 Programming Assignment
+=======
+# ICS2021 Programming Assignment
+>>>>>>> 0590bda (new readme)
 
 This project is the programming assignment of the class ICS(Introduction to Computer System) in College of Intelligence and Computing, Tianjin Univerisity.
 
