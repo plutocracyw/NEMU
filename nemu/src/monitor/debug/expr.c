@@ -7,7 +7,8 @@
 #include <regex.h>
 
 enum {
-	NOTYPE = 256, EQ
+	NOTYPE = 256, EQ,NUM,HEX,REG,NEQ,AND,OR,MUL,
+	PLUS='+',MINUS='-',DIV='/',LPAREN='(',RPAREN=')'
 
 	/* TODO: Add more token types */
 
@@ -22,9 +23,20 @@ static struct rule {
 	 * Pay attention to the precedence level of different rules.
 	 */
 
-	{" +",	NOTYPE},				// spaces
-	{"\\+", '+'},					// plus
-	{"==", EQ}						// equal
+	 {" +",   NOTYPE},       // 空格
+	{"\\+",   PLUS},         // +
+	{"-",     MINUS},        // -
+	{"\\*",   MUL},          // *
+	{"/",     DIV},          // /
+	{"\\(",   LPAREN},       // (
+	{"\\)",   RPAREN},       // )
+	{"==",    EQ},           // ==
+	{"!=",    NEQ},          // !=
+	{"&&",    AND},          // &&
+	{"\\|\\|", OR},          // ||
+	{"0[xX][0-9a-fA-F]+", HEX}, // 十六进制数
+	{"[0-9]+", NUM},         // 十进制数
+	{"\\$[a-zA-Z]+", REG},   // 寄存器
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
@@ -71,6 +83,7 @@ static bool make_token(char *e) {
 				int substr_len = pmatch.rm_eo;
 
 				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
+
 				position += substr_len;
 
 				/* TODO: Now a new token is recognized with rules[i]. Add codes
@@ -78,8 +91,22 @@ static bool make_token(char *e) {
 				 * of tokens, some extra actions should be performed.
 				 */
 
-				switch(rules[i].token_type) {
-					default: panic("please implement me");
+				switch(rules[i].token_type) 
+				{
+					case NOTYPE:break;
+					case NUM:
+					case REG:
+						strncpy(tokens[nr_token].str, substr_start, substr_len);
+            			tokens[nr_token].str[substr_len] = '\0';
+            			tokens[nr_token].type = rules[i].token_type;
+            			nr_token++;
+						break;
+
+					default: 
+						tokens[nr_token].type=rules[i].token_type;
+						tokens[nr_token].str[0]='\0';
+						panic("please implement me");
+						break;
 				}
 
 				break;
