@@ -38,14 +38,93 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+//单步执行命令函数
+static int cmd_si(char *args)
+{
+	int n=1;
+	if (args != NULL) {
+        sscanf(args, "%d", &n);
+    }
+	cpu_exec(1);
+	return 0;
+}
+
+
+//打印寄存器命令函数
+static int cmd_info(char *args)
+{
+	if (args == NULL) {
+        printf("Usage: info r | info w\n");
+        return 0;
+    }
+
+	if(strcmp(args,"r")==0)
+	{
+		printf("eax\t0x%08x\n", cpu.eax);
+		printf("ecx\t0x%08x\n", cpu.ecx);
+		printf("edx\t0x%08x\n", cpu.edx);
+		printf("ebx\t0x%08x\n", cpu.ebx);
+		printf("esp\t0x%08x\n", cpu.esp);
+		printf("ebp\t0x%08x\n", cpu.ebp);
+		printf("esi\t0x%08x\n", cpu.esi);
+		printf("edi\t0x%08x\n", cpu.edi);
+		printf("eip\t0x%08x\n", cpu.eip);
+		printf("eflags\t0x%08x\n", cpu.eflags.val);
+	}
+	else if(strcmp(args,"w")==0)
+	{
+		printf("watchpoints not implemented yet\n");
+	}
+	else {
+        printf("Unknown info subcommand '%s'\n", args);
+    }
+    return 0;
+	
+}
+
+
+//扫描内存函数
+static int cmd_x(char *args)
+{
+	char*arg=strtok(args," ");
+	if(arg==NULL)
+	{
+		printf("Usage: x [length] [address]\n");
+		return 0;
+
+	}
+	int len=atoi(arg);
+	arg=strtok(NULL," ");
+	if(arg==NULL)
+	{
+		 printf("Usage: x [length] [address]\n");
+		 return 0;
+	}
+
+	uint32_t addr;
+    sscanf(arg, "%x", &addr);
+
+	for(int i=0;i<len;i+=4)
+	{
+		uint32_t data=hwaddr_read(addr+i,4);
+		printf("0x%08x: 0x%08x\n", addr + i, data);
+	}
+	return 0;
+}
+
+
 static struct {
 	char *name;
 	char *description;
 	int (*handler) (char *);
-} cmd_table [] = {
+} 
+cmd_table [] = {
 	{ "help", "Display informations about all supported commands", cmd_help },
 	{ "c", "Continue the execution of the program", cmd_c },
 	{ "q", "Exit NEMU", cmd_q },
+	{ "si", "Step one instruction", cmd_si},
+	{ "info", "Prinf register values", cmd_info},
+	{ "x", "Scan memory", cmd_x},
 
 	/* TODO: Add more commands */
 
