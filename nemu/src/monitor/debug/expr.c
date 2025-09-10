@@ -203,7 +203,7 @@ static int precedence(int type)
 static int dominant_op(int p,int q)
 {
 		int op=-1;               //记录当前找到的主导运算符下标，初始化 -1 表示未找到
-		int min_pri=10;          //记录当前最小优先级，初始 10（比任何实际运算符优先级都大）
+		int min_pri=100;          //记录当前最小优先级（初始比任何实际运算符优先级都大）
 		int balance=0;           //用于括号平衡计数，确保只考虑 外层运算符。
 
 		for (int i = p; i <= q; i++) 
@@ -223,6 +223,10 @@ static int dominant_op(int p,int q)
 
 			int pri=precedence(tokens[i].type);
 
+			if(tokens[i].type == NEG || tokens[i].type == DEREF) 
+			{
+            	pri = 6;
+        	}
 			//更换主导运算符
 			if(pri<=min_pri)
 			{
