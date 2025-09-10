@@ -13,11 +13,8 @@
 uint32_t vaddr_read(uint32_t addr, int len);
 
 enum {
-  NOTYPE = 256, EQ, NUM, HEX, REG, NEQ, AND, OR,
-  NEG, DEREF,   // 单目运算
-  // 二元运算
-  PLUS = '+', MINUS = '-', MUL = '*', DIV = '/',
-  LPAREN = '(', RPAREN = ')'
+  NOTYPE = 256, EQ, NUM, HEX, REG, NEQ, AND, OR, NEG, DEREF,  
+  PLUS = '+', MINUS = '-', MUL = '*', DIV = '/', LPAREN = '(', RPAREN = ')'
 };
 
 static struct rule 
@@ -33,8 +30,8 @@ rules[] =
 	 * Pay attention to the precedence level of different rules.
 	 */
 
-	 {" +",   NOTYPE},       // 空格
-	{"\\+",   PLUS},         // +
+	{" +",   NOTYPE},       // 空格
+	{"\\+",   PLUS},         // +(转义字符)
 	{"-",     MINUS},        // -
 	{"\\*",   MUL},          // *
 	{"/",     DIV},          // /
@@ -56,6 +53,8 @@ static regex_t re[NR_REGEX];
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
  */
+
+//初始化正则表达式数组，为后续的词法分析做准备。
 void init_regex() {
 	int i;
 	char error_msg[128];
@@ -70,6 +69,7 @@ void init_regex() {
 	}
 }
 
+//定义类型token
 typedef struct token {
 	int type;
 	char str[32];
@@ -78,17 +78,21 @@ typedef struct token {
 Token tokens[32];
 int nr_token;
 
+
+//词义分析
 static bool make_token(char *e) {
-	int position = 0;
-	int i;
-	regmatch_t pmatch;
+	int position = 0;         //索引位置
+	regmatch_t pmatch;        //用于存储正则匹配的起始和结束位置
 	
-	nr_token = 0;
+	nr_token = 0;             //已生成 token 的数量
 
 	while(e[position] != '\0') {
 		/* Try all rules one by one. */
-		for(i = 0; i < NR_REGEX; i ++) {
-			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
+		for(int i = 0; i < NR_REGEX; i ++) 
+		{
+			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) 
+			{
+				//匹配成功处理
 				char *substr_start = e + position;
 				int substr_len = pmatch.rm_eo;
 
@@ -101,6 +105,7 @@ static bool make_token(char *e) {
 				 * of tokens, some extra actions should be performed.
 				 */
 
+				//token生成逻辑
 				switch(rules[i].token_type) 
 				{
 					case NOTYPE:break;
@@ -123,7 +128,10 @@ static bool make_token(char *e) {
 			}
 		}
 
-		if(i == NR_REGEX) {
+		//匹配失败
+		int i=0;
+		if(i == NR_REGEX) 
+		{
 			printf("no match at position %d\n%s\n%*.s^\n", position, e, position, "");
 			return false;
 		}
@@ -133,11 +141,13 @@ static bool make_token(char *e) {
 }
 
 
+
+//括号匹配
 static bool check_parentheses(int p,int q)
 {
 		if(tokens[p].type!=LPAREN || tokens[q].type!=RPAREN )
 			return false;
-		int balance=0;
+		int balance=0;        //用来跟踪括号配对,遇到 (，balance++,遇到 )，balance--,最终 balance==0 表示括号完全配对。
 		for(int i=p;i<=q;i++)
 		{
 			if(tokens[i].type==LPAREN)
@@ -149,9 +159,9 @@ static bool check_parentheses(int p,int q)
 		}
 
 		return balance==0;
-}  //括号匹配
+}
 
-
+//确定运算顺序
 static int precedence(int type)
 {
 		switch(type)
@@ -174,9 +184,9 @@ static int precedence(int type)
 
 static int dominant_op(int p,int q)
 {
-		int op=-1;
-		int min_pri=10;
-		int balance=0;
+		int op=-1;               //记录当前找到的主导运算符下标，初始化 -1 表示未找到
+		int min_pri=10;          //记录当前最小优先级，初始 10（比任何实际运算符优先级都大）
+		int balance=0;           //用于括号平衡计数，确保只考虑 外层运算符。
 
 		for (int i = p; i <= q; i++) 
 		{
@@ -194,6 +204,8 @@ static int dominant_op(int p,int q)
 				continue;
 
 			int pri=precedence(tokens[i].type);
+
+			//更换主导运算符
 			if(pri<=min_pri)
 			{
 				min_pri=pri;
@@ -228,16 +240,19 @@ uint32_t vaddr_read(uint32_t addr, int len) {
 
 static uint32_t eval(int p,int q,bool *success)
 {
+	/* TODO: Insert codes to evaluate the expression. */
 	if(p>q)
 	{
 		*success=false;
 		return 0;
 	}
 
+
+	//区间只有一个token
 	else if(p==q)
 	{
 		if(tokens[p].type==NUM)
-			return strtoul(tokens[p].str,NULL,10);
+			return strtoul(tokens[p].str,NULL,10);          //strtoul 用于字符串转无符号整数，第三个参数是进制。
 		else if(tokens[p].type==HEX)
 			return strtoul(tokens[p].str,NULL,16);
 		else if (tokens[p].type == REG) 
@@ -250,16 +265,20 @@ static uint32_t eval(int p,int q,bool *success)
 			
 	}
 
+	//如果区间被一对括号完整包裹,去掉首尾括号递归求值
 	else if (check_parentheses(p, q)) 
 	{
 		return eval(p + 1, q - 1,success);
 	}
 
+	//含运算符的区间
 	else 
 	{
-		int op=dominant_op(p,q);
+		int op=dominant_op(p,q);         //找到主导运算符 op
 		int type=tokens[op].type;
 
+
+		//一元运算
 		if(type==NEG)
 		{
 			uint32_t val=eval(op+1,q,success);
@@ -272,9 +291,13 @@ static uint32_t eval(int p,int q,bool *success)
 			return vaddr_read(addr,4);
 		}
 
+
+		//二元运算
 		uint32_t val1 = eval(p, op - 1,success);
 		uint32_t val2 = eval(op + 1, q,success);
 
+
+		//根据运算符计算
 		switch(type)
 		{
 			case PLUS: return val1 + val2;
@@ -287,15 +310,11 @@ static uint32_t eval(int p,int q,bool *success)
 			case OR:  return val1 || val2;
 			default: Assert(0, "Unknown operator %d", type);
 		}
-		//运算
 	}
 	return 0;
 }
 
-	/* TODO: Insert codes to evaluate the expression. */
-
-	//main expr
-
+//将字符串转换为可解析的 token 数组
 uint32_t expr(char *e,bool *success)
 {
 	if(!make_token(e))
@@ -304,30 +323,7 @@ uint32_t expr(char *e,bool *success)
 		return 0;
 	}
 
-
-	//解决负号和解引用
-	for(int i=0;i<nr_token;i++)
-	{
-		if(tokens[i].type==MUL)
-		{
-			if(i==0 || (tokens[i-1].type != NUM &&tokens[i-1].type != HEX&& tokens[i-1].type != REG && tokens[i-1].type != RPAREN))
-			{
-				tokens[i].type=DEREF;
-			}
-		}
-
-		else if(tokens[i].type ==MINUS)
-		{
-			if (i == 0 || (tokens[i-1].type != NUM && tokens[i-1].type != HEX
-			&& tokens[i-1].type != REG && tokens[i-1].type != RPAREN)) 
-			{
-				tokens[i].type = NEG;
-			}
-		}
-	}
-
 	*success=true;
 	return eval(0,nr_token-1,success);
 
 }
-

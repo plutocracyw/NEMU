@@ -13,15 +13,19 @@ void cpu_exec(uint32_t);
 static int cmd_expr(char *args) {
     bool success = true;
     uint32_t result = expr(args, &success);  // 调用expr()
-    if (success) {
+    if (success) 
+	{
         printf("%u\n", result);  
-    } else {
+    } 
+	else 
+	{
         printf("Invalid expression: %s\n", args);
     }
     return 0;
 }
 
-char* rl_gets() {
+char* rl_gets() 
+{
 	static char *line_read = NULL;
 
 	if (line_read) {
