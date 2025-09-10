@@ -82,13 +82,14 @@ int nr_token;
 //词义分析
 static bool make_token(char *e) {
 	int position = 0;         //索引位置
+	int i;
 	regmatch_t pmatch;        //用于存储正则匹配的起始和结束位置
 	
 	nr_token = 0;             //已生成 token 的数量
 
 	while(e[position] != '\0') {
 		/* Try all rules one by one. */
-		for(int i = 0; i < NR_REGEX; i ++) 
+		for(i = 0; i < NR_REGEX; i ++) 
 		{
 			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) 
 			{
@@ -106,7 +107,24 @@ static bool make_token(char *e) {
 				 */
 
 				//token生成逻辑
-				switch(rules[i].token_type) 
+
+				int token_type=rules[i].token_type;
+
+				if(token_type == MINUS) {
+                    if(nr_token == 0 ||                             // 表达式开头
+                       tokens[nr_token - 1].type == LPAREN ||      // 左括号后
+                       tokens[nr_token - 1].type == PLUS ||
+                       tokens[nr_token - 1].type == MINUS ||
+                       tokens[nr_token - 1].type == MUL ||
+                       tokens[nr_token - 1].type == DIV ||
+                       tokens[nr_token - 1].type == EQ ||
+                       tokens[nr_token - 1].type == NEQ ||
+                       tokens[nr_token - 1].type == AND ||
+                       tokens[nr_token - 1].type == OR) {
+                        token_type = NEG;  // 标记为一元负号
+                    }
+                }
+				switch(token_type) 
 				{
 					case NOTYPE:break;
 					case NUM:
