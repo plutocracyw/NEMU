@@ -287,6 +287,15 @@ static uint32_t eval(int p,int q,bool *success)
 			
 	}
 
+	else if(tokens[p].type == NEG) {
+        uint32_t val = eval(p + 1, q, success);
+        return -val;
+    }
+    else if(tokens[p].type == DEREF) {
+        uint32_t addr = eval(p + 1, q, success);
+        return vaddr_read(addr, 4);
+    }
+
 	//如果区间被一对括号完整包裹,去掉首尾括号递归求值
 	else if (check_parentheses(p, q)) 
 	{
