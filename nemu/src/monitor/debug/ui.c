@@ -10,6 +10,17 @@
 void cpu_exec(uint32_t);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
+static int cmd_expr(char *args) {
+    bool success = true;
+    uint32_t result = expr(args, &success);  // 调用expr()
+    if (success) {
+        printf("%u\n", result);  
+    } else {
+        printf("Invalid expression: %s\n", args);
+    }
+    return 0;
+}
+
 char* rl_gets() {
 	static char *line_read = NULL;
 
@@ -26,6 +37,8 @@ char* rl_gets() {
 
 	return line_read;
 }
+
+
 
 static int cmd_c(char *args) {
 	cpu_exec(-1);
@@ -75,7 +88,8 @@ static int cmd_info(char *args)
 	{
 		printf("watchpoints not implemented yet\n");
 	}
-	else {
+	else 
+	{
         printf("Unknown info subcommand '%s'\n", args);
     }
     return 0;
@@ -91,8 +105,8 @@ static int cmd_x(char *args)
 	{
 		printf("Usage: x [length] [address]\n");
 		return 0;
-
 	}
+
 	int len=atoi(arg);
 	arg=strtok(NULL," ");
 	if(arg==NULL)
@@ -118,6 +132,8 @@ static struct {
 	char *description;
 	int (*handler) (char *);
 } 
+
+//命名表
 cmd_table [] = {
 	{ "help", "Display informations about all supported commands", cmd_help },
 	{ "c", "Continue the execution of the program", cmd_c },
@@ -125,6 +141,8 @@ cmd_table [] = {
 	{ "si", "Step one instruction", cmd_si},
 	{ "info", "Prinf register values", cmd_info},
 	{ "x", "Scan memory", cmd_x},
+	{ "expr", "Evaluate the expression", cmd_expr },
+
 
 	/* TODO: Add more commands */
 
@@ -171,6 +189,7 @@ void ui_mainloop() {
 		if(args >= str_end) {
 			args = NULL;
 		}
+
 
 #ifdef HAS_DEVICE
 		extern void sdl_clear_event_queue(void);
