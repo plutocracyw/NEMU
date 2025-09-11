@@ -85,9 +85,6 @@ static int cmd_info(char *args){
 		printf("eip\t0x%08x\n", cpu.eip);
 		printf("eflags\t0x%08x\n", cpu.eflags.val);
 	}
-	else if(strcmp(args,"w")==0){
-		printf("watchpoints not implemented yet\n");
-	}
 	else if (strcmp(args, "w") == 0) {
         display_watchpoints(); 
     }
