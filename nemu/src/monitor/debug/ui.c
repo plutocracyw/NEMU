@@ -11,8 +11,8 @@ void cpu_exec(uint32_t);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 
-char* rl_gets() 
-{
+//读取用户输入
+char* rl_gets(){
 	static char *line_read = NULL;
 
 	if (line_read) {
@@ -20,14 +20,27 @@ char* rl_gets()
 		line_read = NULL;
 	}
 
-	line_read = readline("(nemu) ");
+	line_read = readline("(nemu) ");  //显示提示符 `(nemu) ` 并等待用户输入。
 
 	if (line_read && *line_read) {
 		add_history(line_read);
-	}
+	}  //如果用户输入了非空字符串，就将其加入到历史记录中。
 
 	return line_read;
 }
+
+/*rgs:参数字符串
+ `c` (continue) 命令,连续执行，直到遇到断点、监视点被触发或程序结束。
+ `q` (quit) 命令,退出 NEMU。
+ `si [N]` (step-instruction) 命令,单步执行 NEMU 指令,默认执行 1 条指令。
+ `info r` 命令,打印寄存器状态。
+ `info w` 命令,打印所有监视点的信息。
+ `x` (examine memory) 命令，用于扫描和显示内存内容。
+    *   它需要两个参数：长度 `N` 和起始地址 `EXPR` (例如 `x 16 0x100000`)。
+ `expr()` 函数计算表达式的值,并打印结果。
+ `w` (watchpoint) 命令，用于设置一个监视点。
+ `d` (delete) 命令，用于删除一个监视点
+*/
 
 //计算
 static int cmd_expr(char *args) {
@@ -61,7 +74,7 @@ static int cmd_si(char *args){
 	if (args != NULL) {
         sscanf(args, "%d", &n);
     }
-	cpu_exec(1);
+	cpu_exec(n);
 	return 0;
 }
 
@@ -98,17 +111,17 @@ static int cmd_info(char *args){
 
 //扫描内存函数
 static int cmd_x(char *args){
-	char*arg=strtok(args," ");
-	if(arg==NULL)
-	{
+	char*arg=strtok(args," ");     //使用 strtok 分割参数字符串
+	if(arg==NULL){
 		printf("Usage: x [length] [address]\n");
 		return 0;
 	}
 
 	int len=atoi(arg);
+
+	//在上次的字符串上继续查找下一个分隔符
 	arg=strtok(NULL," ");
-	if(arg==NULL)
-	{
+	if(arg==NULL){
 		 printf("Usage: x [length] [address]\n");
 		 return 0;
 	}
@@ -116,15 +129,12 @@ static int cmd_x(char *args){
 	uint32_t addr;
     sscanf(arg, "%x", &addr);
 
-	for(int i=0;i<len;i+=4)
-	{
+	for(int i=0;i<len;i+=4){
 		uint32_t data=hwaddr_read(addr+i,4);
 		printf("0x%08x: 0x%08x\n", addr + i, data);
 	}
 	return 0;
 }
-
-// 在 ui.c 中
 
 static int cmd_w(char *args) {
     if (args == NULL) {
@@ -134,7 +144,7 @@ static int cmd_w(char *args) {
 
     bool success;
     WP* wp = new_wp();
-    if (wp == NULL) {
+    if (wp == NULL) {     //监视点池已满 
         printf("Failed to create new watchpoint. The pool might be full.\n");
         return 0;
     }
@@ -202,16 +212,19 @@ cmd_table [] = {
 
 static int cmd_help(char *args) {
 	/* extract the first argument */
+	//继续从主循环已部分解析的字符串中获取 "help" 后面的参数
 	char *arg = strtok(NULL, " ");
 	int i;
 
 	if(arg == NULL) {
 		/* no argument given */
+		// 遍历整个 cmd_table,打印所有命令的名字和描述
 		for(i = 0; i < NR_CMD; i ++) {
 			printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);
 		}
 	}
 	else {
+		//遍历 cmd_table，查找匹配的命令
 		for(i = 0; i < NR_CMD; i ++) {
 			if(strcmp(arg, cmd_table[i].name) == 0) {
 				printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);
@@ -262,5 +275,3 @@ void display_watchpoints();
 #endif
 	}
 }
-		
-

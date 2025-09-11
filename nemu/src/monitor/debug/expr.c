@@ -17,14 +17,12 @@ enum {
   PLUS = '+', MINUS = '-', MUL = '*', DIV = '/', LPAREN = '(', RPAREN = ')'
 };
 
-static struct rule 
-{
+static struct rule {
 	char *regex;
 	int token_type;
 } 
 
-rules[] = 
-{
+rules[] = {
 
 	/* TODO: Add more rules.
 	 * Pay attention to the precedence level of different rules.
@@ -105,10 +103,8 @@ static bool make_token(char *e) {
 
 	while(e[position] != '\0') {
 		/* Try all rules one by one. */
-		for(i = 0; i < NR_REGEX; i ++) 
-		{
-			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) 
-			{
+		for(i = 0; i < NR_REGEX; i ++) {
+			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0){
 				//匹配成功处理
 				char *substr_start = e + position;
 				int substr_len = pmatch.rm_eo;
@@ -140,8 +136,7 @@ static bool make_token(char *e) {
                         token_type = NEG;  // 标记为一元负号
                     }
                 }
-				switch(token_type) 
-				{
+				switch(token_type){
 					case NOTYPE:break;
 					case NUM:
 					case HEX:
@@ -165,8 +160,7 @@ static bool make_token(char *e) {
 
 		//匹配失败
 		int i=0;
-		if(i == NR_REGEX) 
-		{
+		if(i == NR_REGEX) {
 			printf("no match at position %d\n%s\n%*.s^\n", position, e, position, "");
 			return false;
 		}
@@ -193,13 +187,11 @@ static bool is_binary_op_token(int type){
 
 
 //括号匹配
-static bool check_parentheses(int p,int q)
-{
+static bool check_parentheses(int p,int q){
 		if(tokens[p].type!=LPAREN || tokens[q].type!=RPAREN )
 			return false;
 		int balance=0;        //用来跟踪括号配对,遇到 (，balance++,遇到 )，balance--,最终 balance==0 表示括号完全配对。
-		for(int i=p;i<=q;i++)
-		{
+		for(int i=p;i<=q;i++){
 			if(tokens[i].type==LPAREN)
 				balance++;
 			else if(tokens[i].type==RPAREN)
@@ -212,10 +204,8 @@ static bool check_parentheses(int p,int q)
 }
 
 //确定运算顺序
-static int precedence(int type)
-{
-		switch(type)
-		{
+static int precedence(int type)	{
+		switch(type){
 			case OR : return 1;
 			case AND : return 2;
 			case EQ : return 3;
@@ -232,21 +222,17 @@ static int precedence(int type)
 }
 
 
-static int dominant_op(int p,int q)
-{
+static int dominant_op(int p,int q){
 		int op=-1;               //当前找到的主导运算符下标，初始化 -1 表示未找到
 		int min_pri=100;          //当前最小优先级（初始比任何实际运算符优先级都大）
 		int balance=0;           //括号平衡计数
 
-		for (int i = p; i <= q; i++) 
-		{
-			if (tokens[i].type == LPAREN) 
-			{ 
+		for (int i = p; i <= q; i++) {
+			if (tokens[i].type == LPAREN) { 
 				balance++; 
 				continue;
 			}
-			if (tokens[i].type == RPAREN) 
-			{ 
+			if (tokens[i].type == RPAREN) { 
 				balance--; 
 				continue; 
 			}
@@ -255,13 +241,11 @@ static int dominant_op(int p,int q)
 
 			int pri=precedence(tokens[i].type);
 
-			if(tokens[i].type == NEG || tokens[i].type == DEREF) 
-			{
+			if(tokens[i].type == NEG || tokens[i].type == DEREF) {
             	pri = 6;
         	}
 			//更换主导运算符
-			if(pri<=min_pri)
-			{
+			if(pri<=min_pri){
 				min_pri=pri;
 				op=i;
 			}
@@ -293,8 +277,7 @@ uint32_t vaddr_read(uint32_t addr, int len) {
 
 
 
-static uint32_t eval(int p,int q,bool *success)
-{
+static uint32_t eval(int p,int q,bool *success){
 	/* TODO: Insert codes to evaluate the expression. */
 	if(p>q)
 	{
@@ -304,11 +287,9 @@ static uint32_t eval(int p,int q,bool *success)
 
 
 	//区间只有一个token
-	else if(p==q)
-	{
+	else if(p==q){
 		*success=true;
-		switch(tokens[p].type)
-		{
+		switch(tokens[p].type){
 			case NUM:
 				return strtoul(tokens[p].str,NULL,10);
 			case HEX:
@@ -328,24 +309,20 @@ static uint32_t eval(int p,int q,bool *success)
 
 
 	//如果区间被一对括号完整包裹,去掉首尾括号递归求值
-	else if (check_parentheses(p, q)) 
-	{
+	else if (check_parentheses(p, q)) {
 		return eval(p + 1, q - 1,success);
 	}
 
 	//含运算符的区间
-	else 
-	{
+		else {
 		int op=dominant_op(p,q);         //找到主导运算符 op
 		int type=tokens[op].type;
 
-		if(type==NEG)
-		{
+		if(type==NEG){
 			uint32_t val=eval(op+1,q,success);
 			return (uint32_t)(-((int32_t)val));
 		}
-		if(type==DEREF)
-		{
+		if(type==DEREF){
 			uint32_t addr=eval(op+1,q,success);
 			return vaddr_read(addr,4);
 		}
@@ -358,8 +335,7 @@ static uint32_t eval(int p,int q,bool *success)
 
 
 		//根据运算符计算
-		switch(type)
-		{
+		switch(type){
 			case PLUS: return val1 + val2;
 			case MINUS: return val1 - val2;
 			case MUL: return val1 * val2;
@@ -375,8 +351,7 @@ static uint32_t eval(int p,int q,bool *success)
 }
 
 //将字符串转换为可解析的 token 数组
-uint32_t expr(char *e,bool *success)
-{
+uint32_t expr(char *e,bool *success){
     if(!make_token(e))
     {
         *success=false;
