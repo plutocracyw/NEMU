@@ -286,9 +286,10 @@ uint32_t reg_str2val(const char *s, bool *success) {
 }
 
 uint32_t vaddr_read(uint32_t addr, int len) {
-    printf("Warning: vaddr_read(%u, %d) called, return dummy 0\n", addr, len);
-    return 0;
+    printf("vaddr_read(0x%x, %d)\n", addr, len);
+    return addr;  // 暂时直接返回地址本身
 }
+
 
 
 static uint32_t eval(int p,int q,bool *success)
