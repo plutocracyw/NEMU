@@ -379,16 +379,22 @@ static uint32_t eval(int p,int q,bool *success)
 //将字符串转换为可解析的 token 数组
 uint32_t expr(char *e,bool *success)
 {
-	if(!make_token(e))
-	{
-		*success=false;
-		return 0;
-	}
+    if(!make_token(e))
+    {
+        *success=false;
+        return 0;
+    }
 
-	mark_unary_operators();
+    mark_unary_operators();
 
-	*success=true;
-	return eval(0,nr_token-1,success);
+    *success=true;
+    uint32_t val = eval(0, nr_token-1, success);
+
+    // 调试输出 signed/unsigned 两种形式
+    printf("expr result = %d (signed), %u (unsigned)\n", (int32_t)val, val);
+
+    return val;
 }
+
 
 
