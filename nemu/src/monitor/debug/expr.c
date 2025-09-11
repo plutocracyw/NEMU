@@ -78,12 +78,28 @@ typedef struct token {
 Token tokens[32];
 int nr_token;
 
+static bool is_binary_op_token(int type);
+
+static void mark_unary_operators() {
+	for (int i = 0; i < nr_token; i++) {
+		if (tokens[i].type == MINUS) {
+			if (i == 0 || tokens[i - 1].type == LPAREN || is_binary_op_token(tokens[i - 1].type)) {
+				tokens[i].type = NEG; 
+			}
+		}
+		else if (tokens[i].type == MUL) {
+			if (i == 0 || tokens[i - 1].type == LPAREN || is_binary_op_token(tokens[i - 1].type)) {
+				tokens[i].type = DEREF; 
+			}
+		}
+	}
+}
 
 //词义分析
 static bool make_token(char *e) {
 	int position = 0;         //索引位置
 	int i;
-	regmatch_t pmatch;        //用于存储正则匹配的起始和结束位置
+	regmatch_t pmatch;     
 	
 	nr_token = 0;             //已生成 token 的数量
 
@@ -158,6 +174,21 @@ static bool make_token(char *e) {
 	return true; 
 }
 
+static bool is_binary_op_token(int type){
+	switch(type){
+		case PLUS:
+		case MINUS:
+		case MUL:
+		case DIV:
+		case EQ:
+		case NEQ:
+		case AND:
+		case OR:
+			return true;
+		default:
+			return false;
+	}
+}
 
 
 //括号匹配
@@ -202,9 +233,9 @@ static int precedence(int type)
 
 static int dominant_op(int p,int q)
 {
-		int op=-1;               //记录当前找到的主导运算符下标，初始化 -1 表示未找到
-		int min_pri=100;          //记录当前最小优先级（初始比任何实际运算符优先级都大）
-		int balance=0;           //用于括号平衡计数，确保只考虑 外层运算符。
+		int op=-1;               //当前找到的主导运算符下标，初始化 -1 表示未找到
+		int min_pri=100;          //当前最小优先级（初始比任何实际运算符优先级都大）
+		int balance=0;           //括号平衡计数
 
 		for (int i = p; i <= q; i++) 
 		{
@@ -287,14 +318,14 @@ static uint32_t eval(int p,int q,bool *success)
 			
 	}
 
-	else if(tokens[p].type == NEG) {
-        uint32_t val = eval(p + 1, q, success);
-        return -val;
-    }
-    else if(tokens[p].type == DEREF) {
-        uint32_t addr = eval(p + 1, q, success);
-        return vaddr_read(addr, 4);
-    }
+	else if(tokens[p].type==NEG){
+		uint32_t val=eval(p+1,q,success);
+		return (uint32_t)(-((int32_t)val));
+	}
+	else if(tokens[p].type==DEREF){
+		uint32_t addr=eval(p+1,q,success);
+		return vaddr_read(addr,4);
+	}
 
 	//如果区间被一对括号完整包裹,去掉首尾括号递归求值
 	else if (check_parentheses(p, q)) 
@@ -354,7 +385,10 @@ uint32_t expr(char *e,bool *success)
 		return 0;
 	}
 
+	mark_unary_operators();
+
 	*success=true;
 	return eval(0,nr_token-1,success);
-
 }
+
+
