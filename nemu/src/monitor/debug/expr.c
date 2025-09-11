@@ -144,6 +144,7 @@ static bool make_token(char *e) {
 				{
 					case NOTYPE:break;
 					case NUM:
+					case HEX:
 					case REG:
 						strncpy(tokens[nr_token].str, substr_start, substr_len);
             			tokens[nr_token].str[substr_len] = '\0';
@@ -305,28 +306,26 @@ static uint32_t eval(int p,int q,bool *success)
 	//区间只有一个token
 	else if(p==q)
 	{
-		if(tokens[p].type==NUM)
-			return strtoul(tokens[p].str,NULL,10);          //strtoul 用于字符串转无符号整数，第三个参数是进制。
-		else if(tokens[p].type==HEX)
-			return strtoul(tokens[p].str,NULL,16);
-		else if (tokens[p].type == REG) 
-			return reg_str2val(tokens[p].str, success);
-		else
+		*success=true;
+		switch(tokens[p].type)
 		{
-			*success=false;
-			return 0;
-		}
+			case NUM:
+				return strtoul(tokens[p].str,NULL,10);
+			case HEX:
+			{
+				return strtoul(tokens[p].str,NULL,16);
+			}
+			case REG:
+			{
+				return reg_str2val(tokens[p].str,success);
+			}
+			default:
+				*success=false;
+				return 0;
 			
+		}
 	}
 
-	else if(tokens[p].type==NEG){
-		uint32_t val=eval(p+1,q,success);
-		return (uint32_t)(-((int32_t)val));
-	}
-	else if(tokens[p].type==DEREF){
-		uint32_t addr=eval(p+1,q,success);
-		return vaddr_read(addr,4);
-	}
 
 	//如果区间被一对括号完整包裹,去掉首尾括号递归求值
 	else if (check_parentheses(p, q)) 
@@ -340,19 +339,17 @@ static uint32_t eval(int p,int q,bool *success)
 		int op=dominant_op(p,q);         //找到主导运算符 op
 		int type=tokens[op].type;
 
-
-		//一元运算
 		if(type==NEG)
 		{
 			uint32_t val=eval(op+1,q,success);
-			return -val;
+			return (uint32_t)(-((int32_t)val));
 		}
-
-		else if(type==DEREF)
+		if(type==DEREF)
 		{
 			uint32_t addr=eval(op+1,q,success);
 			return vaddr_read(addr,4);
 		}
+
 
 
 		//二元运算
