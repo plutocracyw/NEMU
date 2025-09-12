@@ -102,10 +102,13 @@ static bool make_token(char *e) {
 	nr_token = 0;             //已生成 token 的数量
 
 	while(e[position] != '\0') {
+		bool matched = false;
 		/* Try all rules one by one. */
 		for(i = 0; i < NR_REGEX; i ++) {
 			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0){
 				//匹配成功处理
+				matched = true;
+
 				char *substr_start = e + position;
 				int substr_len = pmatch.rm_eo;
 
@@ -148,7 +151,7 @@ static bool make_token(char *e) {
 						break;
 
 					default: 
-						tokens[nr_token].type=rules[i].token_type;
+						tokens[nr_token].type=token_type;
 						tokens[nr_token].str[0]='\0';
 						nr_token++;
 						break;
@@ -159,11 +162,10 @@ static bool make_token(char *e) {
 		}
 
 		//匹配失败
-		int i=0;
-		if(i == NR_REGEX) {
-			printf("no match at position %d\n%s\n%*.s^\n", position, e, position, "");
-			return false;
-		}
+		if (!matched) {  
+            printf("no match at position %d\n%s\n%*.s^\n", position, e, position, "");
+            return false;
+        }
 	}
 
 	return true; 
@@ -228,11 +230,11 @@ static int dominant_op(int p,int q){
 		int balance=0;           //括号平衡计数
 
 		for (int i = q; i >= p; i++) {
-			if (tokens[i].type == LPAREN) { 
+			if (tokens[i].type == RPAREN) { 
 				balance++; 
 				continue;
 			}
-			if (tokens[i].type == RPAREN) { 
+			if (tokens[i].type == LPAREN) { 
 				balance--; 
 				continue; 
 			}
@@ -315,24 +317,44 @@ static uint32_t eval(int p,int q,bool *success){
 
 	//含运算符的区间
 	else {
-	int op=dominant_op(p,q);         //找到主导运算符 op
+		int op=dominant_op(p,q);         //找到主导运算符 op
 
-	if (op < p) { // 或者 op == -1
-    *success = false;
-    printf("Error: No dominant operator found in expression segment.\n");
-    return 0;
-	}
-	int type = tokens[op].type;
+		if (op == -1) {  
+			*success = false;
+			printf("Error: No dominant operator found in expression segment p=%d q=%d\n", p, q);
+			return 0;
+    	}
+		if (op < p || op > q) { 
+			*success = false;
+			printf("Error: dominant operator out of range: op=%d p=%d q=%d\n", op, p, q);
+			return 0;
+		}
 
-	if(type==NEG){
-		uint32_t val=eval(op+1,q,success);
-		return (uint32_t)(-((int32_t)val));
-	}
-	if(type==DEREF){
-		uint32_t addr=eval(op+1,q,success);
-		return vaddr_read(addr,4);
-	}
+		int type = tokens[op].type;
 
+		if(type==NEG){
+			if (op + 1 > q) {   // 检查右操作数是否存在
+            *success = false;
+            printf("Error: unary NEG without operand at op=%d\n", op);
+            return 0;
+        }
+			uint32_t val=eval(op+1,q,success);
+			return (uint32_t)(-((int32_t)val));
+		}
+		if(type==DEREF){
+			if (op + 1 > q) {   //检查右操作数是否存在
+            *success = false;
+            printf("Error: DEREF without operand at op=%d\n", op);
+            return 0;
+        }
+			uint32_t addr=eval(op+1,q,success);
+			return vaddr_read(addr,4);
+		}
+		if (op - 1 < p || op + 1 > q) {  //检查二元运算符是否有左右操作数
+        *success = false;
+        printf("Error: binary operator at edge op=%d p=%d q=%d\n", op, p, q);
+        return 0;
+    }
 
 
 		//二元运算
