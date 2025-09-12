@@ -54,11 +54,10 @@ static regex_t re[NR_REGEX];
 
 //初始化正则表达式数组，为后续的词法分析做准备。
 void init_regex() {
-	int i;
 	char error_msg[128];
 	int ret;
 
-	for(i = 0; i < NR_REGEX; i ++) {
+	for(int i = 0; i < NR_REGEX; i ++) {
 		ret = regcomp(&re[i], rules[i].regex, REG_EXTENDED);
 		if(ret != 0) {
 			regerror(ret, &re[i], error_msg, 128);
