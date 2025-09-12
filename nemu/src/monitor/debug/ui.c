@@ -128,8 +128,8 @@ static int cmd_x(char *args){
 
 	uint32_t addr;
     sscanf(arg, "%x", &addr);
-
-	for(int i=0;i<len;i++){
+	int i;
+	for(i=0;i<len;i++){
 		uint32_t data=hwaddr_read(addr+i*4,4);
 		printf("0x%08x: 0x%08x\n", addr + i*4, data);
 	}

@@ -56,8 +56,8 @@ static regex_t re[NR_REGEX];
 void init_regex() {
 	char error_msg[128];
 	int ret;
-
-	for(int i = 0; i < NR_REGEX; i ++) {
+	int i;
+	for(i = 0; i < NR_REGEX; i ++) {
 		ret = regcomp(&re[i], rules[i].regex, REG_EXTENDED);
 		if(ret != 0) {
 			regerror(ret, &re[i], error_msg, 128);
@@ -74,11 +74,12 @@ typedef struct token {
 
 Token tokens[1024];
 int nr_token;
+int i;
 
 static bool is_binary_op_token(int type);
 
 static void mark_unary_operators() {
-	for (int i = 0; i < nr_token; i++) {
+	for (i = 0; i < nr_token; i++) {
 		if (tokens[i].type == MINUS) {
 			if (i == 0 || tokens[i - 1].type == LPAREN || is_binary_op_token(tokens[i - 1].type)) {
 				tokens[i].type = NEG; 
@@ -189,8 +190,11 @@ static bool check_parentheses(int p,int q){
 		return false;
 	if(tokens[p].type!=LPAREN || tokens[q].type!=RPAREN )
 		return false;
+	
 	int balance=0;        //用来跟踪括号配对,遇到 (，balance++,遇到 )，balance--,最终 balance==0 表示括号完全配对。
-	for(int i=p;i<=q;i++){
+	int i;
+
+	for(i=p;i<=q;i++){
 		if(tokens[i].type==LPAREN)
 			balance++;
 		else if(tokens[i].type==RPAREN)
@@ -229,7 +233,8 @@ static int dominant_op(int p,int q){
 		int min_pri=100;          //当前最小优先级（初始比任何实际运算符优先级都大）
 		int balance=0;           //括号平衡计数
 
-		for (int i = p; i <= q; i++) {
+		int i;
+		for (i = p; i <= q; i++) {
 			if (tokens[i].type == LPAREN) { 
 				balance++; 
 				continue;
