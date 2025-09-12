@@ -129,9 +129,9 @@ static int cmd_x(char *args){
 	uint32_t addr;
     sscanf(arg, "%x", &addr);
 
-	for(int i=0;i<len;i+=4){
-		uint32_t data=hwaddr_read(addr+i,4);
-		printf("0x%08x: 0x%08x\n", addr + i, data);
+	for(int i=0;i<len;i++){
+		uint32_t data=hwaddr_read(addr+i*4,4);
+		printf("0x%08x: 0x%08x\n", addr + i*4, data);
 	}
 	return 0;
 }
@@ -200,6 +200,7 @@ cmd_table [] = {
 	{ "info", "Prinf register values", cmd_info},
 	{ "x", "Scan memory", cmd_x},
 	{ "expr", "Evaluate the expression", cmd_expr },
+	{ "p", "Evaluate an expression (alias for expr)", cmd_expr },
 	{ "w", "Set a watchpoint. Usage: w EXPR", cmd_w },
     { "d", "Delete a watchpoint. Usage: d N", cmd_d },
 

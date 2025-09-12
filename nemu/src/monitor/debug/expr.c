@@ -227,7 +227,7 @@ static int dominant_op(int p,int q){
 		int min_pri=100;          //当前最小优先级（初始比任何实际运算符优先级都大）
 		int balance=0;           //括号平衡计数
 
-		for (int i = p; i <= q; i++) {
+		for (int i = q; i >= p; i++) {
 			if (tokens[i].type == LPAREN) { 
 				balance++; 
 				continue;
