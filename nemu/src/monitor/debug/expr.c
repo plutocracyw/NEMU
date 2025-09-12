@@ -314,18 +314,24 @@ static uint32_t eval(int p,int q,bool *success){
 	}
 
 	//含运算符的区间
-		else {
-		int op=dominant_op(p,q);         //找到主导运算符 op
-		int type=tokens[op].type;
+	else {
+	int op=dominant_op(p,q);         //找到主导运算符 op
 
-		if(type==NEG){
-			uint32_t val=eval(op+1,q,success);
-			return (uint32_t)(-((int32_t)val));
-		}
-		if(type==DEREF){
-			uint32_t addr=eval(op+1,q,success);
-			return vaddr_read(addr,4);
-		}
+	if (op < p) { // 或者 op == -1
+    *success = false;
+    printf("Error: No dominant operator found in expression segment.\n");
+    return 0;
+	}
+	int type = tokens[op].type;
+
+	if(type==NEG){
+		uint32_t val=eval(op+1,q,success);
+		return (uint32_t)(-((int32_t)val));
+	}
+	if(type==DEREF){
+		uint32_t addr=eval(op+1,q,success);
+		return vaddr_read(addr,4);
+	}
 
 
 
