@@ -198,6 +198,8 @@ static bool check_parentheses(int p,int q){
 				balance++;
 			else if(tokens[i].type==RPAREN)
 				balance--;
+			if (balance < 0) 
+				return false;
 			if(balance==0 && i<q)
 				return false;
 		}
