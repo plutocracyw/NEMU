@@ -125,33 +125,29 @@ static bool make_token(char *e) {
 
 				int token_type=rules[i].token_type;
 
-				if(token_type == MINUS) {
-                    if(nr_token == 0 ||                             // 表达式开头
-                       tokens[nr_token - 1].type == LPAREN ||      // 左括号后
-                       tokens[nr_token - 1].type == PLUS ||
-                       tokens[nr_token - 1].type == MINUS ||
-                       tokens[nr_token - 1].type == MUL ||
-                       tokens[nr_token - 1].type == DIV ||
-                       tokens[nr_token - 1].type == EQ ||
-                       tokens[nr_token - 1].type == NEQ ||
-                       tokens[nr_token - 1].type == AND ||
-                       tokens[nr_token - 1].type == OR) {
-                        token_type = NEG;  // 标记为一元负号
-                    }
-                }
+				if (token_type != NOTYPE) {
+					if (nr_token >= sizeof(tokens) / sizeof(tokens[0])) {
+						printf("Error: too many tokens (nr_token >= %zu)\n", sizeof(tokens) / sizeof(tokens[0]));
+						return false;
+					}
+				}
+				
 				switch(token_type){
 					case NOTYPE:break;
 					case NUM:
 					case HEX:
 					case REG:
-						strncpy(tokens[nr_token].str, substr_start, substr_len);
-            			tokens[nr_token].str[substr_len] = '\0';
-            			tokens[nr_token].type = rules[i].token_type;
-            			nr_token++;
+						size_t copy_len = (size_t)substr_len;
+						if (copy_len >= sizeof(tokens[nr_token].str))
+							copy_len = sizeof(tokens[nr_token].str) - 1;
+						strncpy(tokens[nr_token].str, substr_start, copy_len);
+						tokens[nr_token].str[copy_len] = '\0';
+						tokens[nr_token].type = token_type; /* 使用 token_type */
+						nr_token++;
 						break;
 
-					default: 
-						tokens[nr_token].type=token_type;
+					default:
+						tokens[nr_token].type=rules[i].token_type;
 						tokens[nr_token].str[0]='\0';
 						nr_token++;
 						break;
@@ -190,21 +186,24 @@ static bool is_binary_op_token(int type){
 
 //括号匹配
 static bool check_parentheses(int p,int q){
-		if(tokens[p].type!=LPAREN || tokens[q].type!=RPAREN )
+	if(p>q)
+		return false;
+	if(tokens[p].type!=LPAREN || tokens[q].type!=RPAREN )
+		return false;
+	int balance=0;        //用来跟踪括号配对,遇到 (，balance++,遇到 )，balance--,最终 balance==0 表示括号完全配对。
+	for(int i=p;i<=q;i++){
+		if(tokens[i].type==LPAREN)
+			balance++;
+		else if(tokens[i].type==RPAREN)
+			balance--;
+		
+		if(balance==0 && i<q)
 			return false;
-		int balance=0;        //用来跟踪括号配对,遇到 (，balance++,遇到 )，balance--,最终 balance==0 表示括号完全配对。
-		for(int i=p;i<=q;i++){
-			if(tokens[i].type==LPAREN)
-				balance++;
-			else if(tokens[i].type==RPAREN)
-				balance--;
-			if (balance < 0) 
-				return false;
-			if(balance==0 && i<q)
-				return false;
-		}
+		if (balance < 0) 
+			return false;
+	}
 
-		return balance==0;
+	return balance==0;
 }
 
 //确定运算顺序
@@ -231,28 +230,32 @@ static int dominant_op(int p,int q){
 		int min_pri=100;          //当前最小优先级（初始比任何实际运算符优先级都大）
 		int balance=0;           //括号平衡计数
 
-		for (int i = q; i >= p; i++) {
-			if (tokens[i].type == RPAREN) { 
+		for (int i = p; i <= q; i++) {
+			if (tokens[i].type == LPAREN) { 
 				balance++; 
 				continue;
 			}
-			if (tokens[i].type == LPAREN) { 
+			if (tokens[i].type == RPAREN) { 
 				balance--; 
+				if(balance < 0){
+					return -1;
+				}
 				continue; 
 			}
 			if (balance > 0) 
 				continue;
 
-			if (tokens[i].type == NEG || tokens[i].type == DEREF) 
-				continue;
-
-			int pri=precedence(tokens[i].type);
-
-			//更换主导运算符
-			if(pri<=min_pri){
-				min_pri=pri;
-				op=i;
+			if(is_binary_op_token(tokens[i].type)){
+				int pri=precedence(tokens[i].type);
+				if(pri<=min_pri){
+					min_pri=pri;
+					op=i;
+				}
 			}
+			
+		}
+		if(balance !=0){
+			return -1;
 		}
 		return op;
 }
@@ -321,63 +324,59 @@ static uint32_t eval(int p,int q,bool *success){
 	else {
 		int op=dominant_op(p,q);         //找到主导运算符 op
 
-		if (op == -1) {  
-			*success = false;
-			printf("Error: No dominant operator found in expression segment p=%d q=%d\n", p, q);
-			return 0;
-    	}
-		if (op < p || op > q) { 
-			*success = false;
-			printf("Error: dominant operator out of range: op=%d p=%d q=%d\n", op, p, q);
-			return 0;
+		if(op!=-1){
+			if(op-1<p ||op+1>q){
+				*success=false;
+				printf("Error: operator at edge op=%d p=%d q=%d\n", op, p, q);
+				return 0;
+			}
+
+			uint32_t val1=eval(p,op-1,success);
+			if(!*success) return 0;
+
+			uint32_t val2=eval(op+1,q,success);
+			if(!*success) return 0;
+
+			switch(tokens[op].type){
+				case PLUS: return val1+val2;
+				case MINUS: return val1-val2;
+				case MUL: return val1*val2;
+				case DIV: Assert(val2 != 0, "Divide by zero"); return val1/val2;
+				case EQ: return val1==val2;
+				case NEQ: return val1!=val2;
+				case AND: return val1&&val2;
+				case OR:  return val1||val2;
+				default: Assert(0, "Unknown operator %d at position %d", tokens[op].type,op);
+			}
 		}
-
-		int type = tokens[op].type;
-
-		if(type==NEG){
-			if (op + 1 > q) {   // 检查右操作数是否存在
-            *success = false;
-            printf("Error: unary NEG without operand at op=%d\n", op);
-            return 0;
-        }
-			uint32_t val=eval(op+1,q,success);
-			return (uint32_t)(-((int32_t)val));
-		}
-		if(type==DEREF){
-			if (op + 1 > q) {   //检查右操作数是否存在
-            *success = false;
-            printf("Error: DEREF without operand at op=%d\n", op);
-            return 0;
-        }
-			uint32_t addr=eval(op+1,q,success);
-			return vaddr_read(addr,4);
-		}
-		if (op - 1 < p || op + 1 > q) {  //检查二元运算符是否有左右操作数
-        *success = false;
-        printf("Error: binary operator at edge op=%d p=%d q=%d\n", op, p, q);
-        return 0;
-    }
-
-
-		//二元运算
-		uint32_t val1 = eval(p, op - 1,success);
-		uint32_t val2 = eval(op + 1, q,success);
-
-
-		//根据运算符计算
-		switch(type){
-			case PLUS: return val1 + val2;
-			case MINUS: return val1 - val2;
-			case MUL: return val1 * val2;
-			case DIV: Assert(val2 != 0, "Divide by zero"); return val1 / val2;
-			case EQ: return val1 == val2;
-			case NEQ: return val1 != val2;
-			case AND: return val1 && val2;
-			case OR:  return val1 || val2;
-			default: Assert(0, "Unknown operator %d", type);
+		else{
+			if(tokens[p].type==NEG){
+				if(p+1>q){
+					*success=false;
+					printf("Error: unary NEG without operand at p=%d q=%d\n", p, q);
+					return 0;
+				}
+				uint32_t val=eval(p+1,q,success);
+				if(!*success) return 0;
+				return (uint32_t)(-((int32_t)val));
+			}
+			else if(tokens[p].type==DEREF){
+				if(p+1>q){
+					*success=false;
+					printf("Error: DEREF without operand at p=%d q=%d\n", p, q);
+					return 0;
+				}
+				uint32_t addr=eval(p+1,q,success);
+				if(!*success) return 0;
+				return vaddr_read(addr,4);
+			}
+			else{
+				*success=false;
+				printf("Error: no dominant operator found in p=%d q=%d\n", p, q);
+				return 0;
+			}
 		}
 	}
-	return 0;
 }
 
 //将字符串转换为可解析的 token 数组
