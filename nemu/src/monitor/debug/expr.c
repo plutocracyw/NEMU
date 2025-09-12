@@ -73,7 +73,7 @@ typedef struct token {
 	char str[32];
 } Token;
 
-Token tokens[32];
+Token tokens[1024];
 int nr_token;
 
 static bool is_binary_op_token(int type);
@@ -243,11 +243,11 @@ static int dominant_op(int p,int q){
 			if (balance > 0) 
 				continue;
 
+			if (tokens[i].type == NEG || tokens[i].type == DEREF) 
+				continue;
+
 			int pri=precedence(tokens[i].type);
 
-			if(tokens[i].type == NEG || tokens[i].type == DEREF) {
-            	pri = 6;
-        	}
 			//更换主导运算符
 			if(pri<=min_pri){
 				min_pri=pri;
