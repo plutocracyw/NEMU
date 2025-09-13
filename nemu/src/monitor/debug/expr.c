@@ -238,18 +238,13 @@ static int dominant_op(int p,int q){
 		for (i = p; i <= q; i++) {
 			if (tokens[i].type == LPAREN) { 
 				balance++; 
-				continue;
 			}
 			if (tokens[i].type == RPAREN) { 
 				balance--; 
-				if(balance < 0){
-					return -1;
-				}
-				continue; 
 			}
-			if (balance > 0) 
-				continue;
-
+			if(balance < 0){
+				return -1;
+			}
 			if(balance == 0 && is_binary_op_token(tokens[i].type)) {
 				int pri=precedence(tokens[i].type);
 				if(pri<=min_pri){
