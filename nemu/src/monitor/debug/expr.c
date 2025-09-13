@@ -250,7 +250,7 @@ static int dominant_op(int p,int q){
 			if (balance > 0) 
 				continue;
 
-			if(is_binary_op_token(tokens[i].type)){
+			if(balance == 0 && is_binary_op_token(tokens[i].type)) {
 				int pri=precedence(tokens[i].type);
 				if(pri<=min_pri){
 					min_pri=pri;
