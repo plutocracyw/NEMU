@@ -133,10 +133,9 @@ static bool make_token(char *e) {
 				}
 				
 				switch(token_type){
-					case NOTYPE:break;
 					case NUM:
 					case HEX:
-					case REG:
+					case REG:{
 						size_t copy_len = (size_t)substr_len;
 						if (copy_len >= sizeof(tokens[nr_token].str))
 							copy_len = sizeof(tokens[nr_token].str) - 1;
@@ -145,6 +144,7 @@ static bool make_token(char *e) {
 						tokens[nr_token].type = token_type; /* 使用 token_type */
 						nr_token++;
 						break;
+						}
 
 					default:
 						tokens[nr_token].type=rules[i].token_type;
@@ -186,13 +186,14 @@ static bool is_binary_op_token(int type){
 
 //括号匹配
 static bool check_parentheses(int p,int q){
+	int i;
+	int balance=0;
+
 	if(p>q)
 		return false;
 	if(tokens[p].type!=LPAREN || tokens[q].type!=RPAREN )
 		return false;
 	
-	int balance=0;        //用来跟踪括号配对,遇到 (，balance++,遇到 )，balance--,最终 balance==0 表示括号完全配对。
-	int i;
 
 	for(i=p;i<=q;i++){
 		if(tokens[i].type==LPAREN)
@@ -232,8 +233,8 @@ static int dominant_op(int p,int q){
 		int op=-1;               //当前找到的主导运算符下标，初始化 -1 表示未找到
 		int min_pri=100;          //当前最小优先级（初始比任何实际运算符优先级都大）
 		int balance=0;           //括号平衡计数
-
 		int i;
+
 		for (i = p; i <= q; i++) {
 			if (tokens[i].type == LPAREN) { 
 				balance++; 
