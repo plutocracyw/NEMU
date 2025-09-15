@@ -264,7 +264,7 @@ static int dominant_op(int p, int q) {
             continue;
         }
 
-        if (is_binary_op_token(type) || type == NEG || type == DEREF) {
+        if (is_binary_op_token(type)) {
             int pri = precedence(type);
             if (pri <= min_pri) {
                 min_pri = pri;
@@ -340,47 +340,47 @@ static uint32_t eval(int p,int q,bool *success){
 	
 	op=dominant_op(p,q);
 
-		if(op!=-1){
+	if(op!=-1){
 
-			val1=eval(p,op-1,success);
-			if(!*success) return 0;
-			val2=eval(op+1,q,success);
-			if(!*success) return 0;
+		val1=eval(p,op-1,success);
+		if(!*success) return 0;
+		val2=eval(op+1,q,success);
+		if(!*success) return 0;
 
-			switch(tokens[op].type){
-				case PLUS: return val1+val2;
-				case MINUS: return val1-val2;
-				case MUL: return val1*val2;
-				case DIV: Assert(val2 != 0, "Divide by zero"); return val1/val2;
-				case EQ: return val1==val2;
-				case NEQ: return val1!=val2;
-				case AND: return val1&&val2;
-				case OR:  return val1||val2;
-				default: Assert(0, "Unknown operator %d at position %d", tokens[op].type,op);
-			}
+		switch(tokens[op].type){
+			case PLUS: return val1+val2;
+			case MINUS: return val1-val2;
+			case MUL: return val1*val2;
+			case DIV: Assert(val2 != 0, "Divide by zero"); return val1/val2;
+			case EQ: return val1==val2;
+			case NEQ: return val1!=val2;
+			case AND: return val1&&val2;
+			case OR:  return val1||val2;
+			default: Assert(0, "Unknown operator %d at position %d", tokens[op].type,op);
+		}
+	}
+	else{
+		if(tokens[p].type==NEG){
+			tmp=eval(p+1,q,success);
+			if(!*success) return 0;
+			return (uint32_t)(-(int32_t)tmp);
+		}
+		else if(tokens[p].type==DEREF){
+			addr=eval(p+1,q,success);
+			if(!*success) return 0;
+			return vaddr_read(addr,4);
+		}
+		else if (tokens[p].type == NOT) {
+			tmp = eval(p+1,q,success);
+			if(!*success) return 0;
+			return (tmp == 0 ? 1 : 0);
 		}
 		else{
-			if(tokens[p].type==NEG){
-				tmp=eval(p+1,q,success);
-				if(!*success) return 0;
-				return (uint32_t)(-(int32_t)tmp);
-			}
-			else if(tokens[p].type==DEREF){
-				addr=eval(p+1,q,success);
-				if(!*success) return 0;
-				return vaddr_read(addr,4);
-			}
-			else if (tokens[p].type == NOT) {
-				tmp = eval(p+1,q,success);
-				if(!*success) return 0;
-				return (tmp == 0 ? 1 : 0);
-    		}
-			else{
-				*success=false;
-				printf("Error: no dominant operator found in p=%d q=%d\n", p, q);
-				return 0;
-			}
+			*success=false;
+			printf("Error: no dominant operator found in p=%d q=%d\n", p, q);
+			return 0;
 		}
+	}
 
 		*success=false;
 		return 0;
