@@ -65,7 +65,7 @@ Token tokens[1024];
 int nr_token;
 
 static bool make_token(char *e);
-static void mark_unary_operators();
+static void mark_unary_operators(void);
 static int precedence(int type);
 static bool is_binary_op_token(int type);
 static int check_parentheses(int p,int q);
@@ -178,6 +178,7 @@ static bool make_token(char *e) {
         }
     }
 
+	
     return true; 
 }
 
@@ -279,15 +280,15 @@ static int dominant_op(int p, int q) {
 uint32_t reg_str2val(const char *s, bool *success) {
     *success = true;
 
-    if (strcmp(s, "$eax") == 0) return cpu.eax;
-    if (strcmp(s, "$ebx") == 0) return cpu.ebx;
-    if (strcmp(s, "$ecx") == 0) return cpu.ecx;
-    if (strcmp(s, "$edx") == 0) return cpu.edx;
-    if (strcmp(s, "$esp") == 0) return cpu.esp;
-    if (strcmp(s, "$ebp") == 0) return cpu.ebp;
-    if (strcmp(s, "$esi") == 0) return cpu.esi;
-    if (strcmp(s, "$edi") == 0) return cpu.edi;
-    if (strcmp(s, "$eip") == 0) return cpu.eip;
+    if (strcasecmp(s, "$eax") == 0) return cpu.eax;
+    if (strcasecmp(s, "$ebx") == 0) return cpu.ebx;
+    if (strcasecmp(s, "$ecx") == 0) return cpu.ecx;
+    if (strcasecmp(s, "$edx") == 0) return cpu.edx;
+    if (strcasecmp(s, "$esp") == 0) return cpu.esp;
+    if (strcasecmp(s, "$ebp") == 0) return cpu.ebp;
+    if (strcasecmp(s, "$esi") == 0) return cpu.esi;
+    if (strcasecmp(s, "$edi") == 0) return cpu.edi;
+    if (strcasecmp(s, "$eip") == 0) return cpu.eip;
 
     *success = false;
     return 0;
