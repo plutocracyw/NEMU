@@ -115,70 +115,69 @@ static void mark_unary_operators(void) {
 
 //词义分析
 static bool make_token(char *e) {
-	int position = 0;         //索引位置
-	int i;
-	regmatch_t pmatch;     
+    int position = 0;         /* 当前扫描位置 */
+    int i;
+    regmatch_t pmatch;     
 	
-	nr_token = 0;             //已生成 token 的数量
+    nr_token = 0;             /* 已生成 token 的数量 */
 
-	while(e[position] != '\0') {
-		int matched = 0;
-		/* Try all rules one by one. */
-		for(i = 0; i < NR_REGEX; i ++) {
-			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0){
-				int substr_len=pmatch.rm_eo;
+    while (e[position] != '\0') {
+        int matched = 0;
+        /* Try all rules one by one. */
+        for (i = 0; i < NR_REGEX; i++) {
+            if (regexec(&re[i], e + position, 1, &pmatch, 0) == 0 
+                && pmatch.rm_so == 0) {
 
-				char *substr_start = e + position;
-				int token_type = rules[i].token_type;
+                int substr_len = pmatch.rm_eo;  /* 匹配到的子串长度 */
+                char *substr_start = e + position;
+                int token_type = rules[i].token_type;
 
-				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
+                Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
+                    i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
-				position += substr_len;
+                position += substr_len;
 
-				/* TODO: Now a new token is recognized with rules[i]. Add codes
-				 * to record the token in the array `tokens'. For certain types
-				 * of tokens, some extra actions should be performed.
-				 */
+                /* 跳过空格 */
+                if (token_type == NOTYPE) {
+                    matched = 1;
+                    break;
+                }
 
-				//token生成逻辑
+                if (nr_token >= (int)(sizeof(tokens) / sizeof(tokens[0]))) {
+                    printf("Error: too many tokens (nr_token >= %lu)\n",
+                           (unsigned long)(sizeof(tokens) / sizeof(tokens[0])));
+                    return false;
+                }
 
-				if (token_type != NOTYPE) {
-					if (nr_token >= (int)(sizeof(tokens) / sizeof(tokens[0]))) {
-						printf("Error: too many tokens (nr_token >= %zu)\n", sizeof(tokens) / sizeof(tokens[0]));
-						return false;
-					}
-				}
-				
-				if(token_type == NUM || token_type == HEX || token_type == REG) {
-					size_t copy_len;
-					copy_len=(size_t)substr_start;
-					if(copy_len >= sizeof(tokens[nr_token].str)) {
-						copy_len = sizeof(tokens[nr_token].str) - 1;
-					}
-					strncpy(tokens[nr_token].str, substr_start, copy_len);
-					tokens[nr_token].str[copy_len] = '\0'; // 确保字符串以 null 结尾
-					tokens[nr_token].type = token_type;
-					nr_token++;
-				}
-				else if(token_type != NOTYPE) {
-					tokens[nr_token].type = token_type;
-					tokens[nr_token].str[0] = '\0'; // 清空字符串
-					nr_token++;
-				}
-				matched=1;
-				break;
-			}
-		}
+                if (token_type == NUM || token_type == HEX || token_type == REG) {
+                    size_t copy_len = (size_t)substr_len;
+                    if (copy_len >= sizeof(tokens[nr_token].str)) {
+                        copy_len = sizeof(tokens[nr_token].str) - 1;
+                    }
+                    strncpy(tokens[nr_token].str, substr_start, copy_len);
+                    tokens[nr_token].str[copy_len] = '\0';
+                } else {
+                    tokens[nr_token].str[0] = '\0'; /* 非字符串类 token 清空 str */
+                }
 
-		//匹配失败
-		if (!matched) {  
-            printf("no match at position %d\n%s\n%*.s^\n", position, e, position, "");
+                tokens[nr_token].type = token_type;
+                nr_token++;
+                matched = 1;
+                break;
+            }
+        }
+
+        /* 匹配失败 */
+        if (!matched) {  
+            printf("no match at position %d\n%s\n%*.s^\n",
+                   position, e, position, "");
             return false;
         }
-	}
+    }
 
-	return true; 
+    return true; 
 }
+
 
 static bool is_binary_op_token(int type){
 	switch(type){
