@@ -318,27 +318,19 @@ static uint32_t eval(int p,int q,bool *success){
 			}
 			default:
 				*success=false;
+				printf("Error: Invalid single token at position %d\n", p);
 				return 0;
 			
 		}
 	}
-
-
-	//如果区间被一对括号完整包裹,去掉首尾括号递归求值
-	else if (check_parentheses(p, q)) {
-		return eval(p + 1, q - 1,success);
+	if(check_parentheses(p,q)) {
+		return eval(p+1,q-1,success);
 	}
 
-	//含运算符的区间
-	else {
-		int op=dominant_op(p,q);         //找到主导运算符 op
+	
+	int op=dominant_op(p,q);
 
 		if(op!=-1){
-			if(op-1<p ||op+1>q){
-				*success=false;
-				printf("Error: operator at edge op=%d p=%d q=%d\n", op, p, q);
-				return 0;
-			}
 
 			uint32_t val1=eval(p,op-1,success);
 			if(!*success) return 0;
@@ -362,17 +354,15 @@ static uint32_t eval(int p,int q,bool *success){
 			if(tokens[p].type==NEG){
 				if(p+1>q){
 					*success=false;
-					printf("Error: unary NEG without operand at p=%d q=%d\n", p, q);
 					return 0;
 				}
 				uint32_t val=eval(p+1,q,success);
 				if(!*success) return 0;
 				return (uint32_t)(-((int32_t)val));
 			}
-			else if(tokens[p].type==DEREF){
+			else if(tokens[p].type==DEREF || p==q){
 				if(p+1>q){
 					*success=false;
-					printf("Error: DEREF without operand at p=%d q=%d\n", p, q);
 					return 0;
 				}
 				uint32_t addr=eval(p+1,q,success);
@@ -385,7 +375,6 @@ static uint32_t eval(int p,int q,bool *success){
 				return 0;
 			}
 		}
-	}
 }
 
 //将字符串转换为可解析的 token 数组
