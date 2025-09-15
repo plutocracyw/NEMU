@@ -85,21 +85,32 @@ void init_regex() {
 	}
 }
 
-static void mark_unary_operators() {
-	int i;
-	for (i = 0; i < nr_token; i++) {
-		if (tokens[i].type == MINUS) {
-			if (i == 0 || tokens[i - 1].type == LPAREN || is_binary_op_token(tokens[i - 1].type)) {
-				tokens[i].type = NEG; 
-			}
-		}
-		else if (tokens[i].type == MUL) {
-			if (i == 0 || tokens[i - 1].type == LPAREN || is_binary_op_token(tokens[i - 1].type)) {
-				tokens[i].type = DEREF; 
-			}
-		}
-	}
+/* 标记一元运算符（NEG, DEREF） */
+static void mark_unary_operators(void) {
+    int i;
+    for (i = 0; i < nr_token; i++) {
+        if (tokens[i].type == MINUS) {
+            if (i == 0) {
+                tokens[i].type = NEG;
+            } else {
+                int t = tokens[i - 1].type;
+                if (t != NUM && t != HEX && t != REG && t != RPAREN) {
+                    tokens[i].type = NEG;
+                }
+            }
+        } else if (tokens[i].type == MUL) {
+            if (i == 0) {
+                tokens[i].type = DEREF;
+            } else {
+                int t = tokens[i - 1].type;
+                if (t != NUM && t != HEX && t != REG && t != RPAREN) {
+                    tokens[i].type = DEREF;
+                }
+            }
+        }
+    }
 }
+
 
 //词义分析
 static bool make_token(char *e) {
@@ -110,15 +121,14 @@ static bool make_token(char *e) {
 	nr_token = 0;             //已生成 token 的数量
 
 	while(e[position] != '\0') {
-		bool matched = false;
+		int matched = 0;
 		/* Try all rules one by one. */
 		for(i = 0; i < NR_REGEX; i ++) {
 			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0){
-				//匹配成功处理
-				matched = true;
+				int substr_len=pmatch.rm_eo;
 
 				char *substr_start = e + position;
-				int substr_len = pmatch.rm_eo;
+				int token_type = rules[i].token_type;
 
 				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
@@ -131,36 +141,30 @@ static bool make_token(char *e) {
 
 				//token生成逻辑
 
-				int token_type=rules[i].token_type;
-
 				if (token_type != NOTYPE) {
-					if (nr_token >= sizeof(tokens) / sizeof(tokens[0])) {
+					if (nr_token >= (int)(sizeof(tokens) / sizeof(tokens[0]))) {
 						printf("Error: too many tokens (nr_token >= %zu)\n", sizeof(tokens) / sizeof(tokens[0]));
 						return false;
 					}
 				}
 				
-				switch(token_type){
-					case NUM:
-					case HEX:
-					case REG:{
-						size_t copy_len = (size_t)substr_len;
-						if (copy_len >= sizeof(tokens[nr_token].str))
-							copy_len = sizeof(tokens[nr_token].str) - 1;
-						strncpy(tokens[nr_token].str, substr_start, copy_len);
-						tokens[nr_token].str[copy_len] = '\0';
-						tokens[nr_token].type = token_type; /* 使用 token_type */
-						nr_token++;
-						break;
-						}
-
-					default:
-						tokens[nr_token].type=rules[i].token_type;
-						tokens[nr_token].str[0]='\0';
-						nr_token++;
-						break;
+				if(token_type == NUM || token_type == HEX || token_type == REG) {
+					size_t copy_len;
+					copy_len=(size_t)substr_start;
+					if(copy_len >= sizeof(tokens[nr_token].str)) {
+						copy_len = sizeof(tokens[nr_token].str) - 1;
+					}
+					strncpy(tokens[nr_token].str, substr_start, copy_len);
+					tokens[nr_token].str[copy_len] = '\0'; // 确保字符串以 null 结尾
+					tokens[nr_token].type = token_type;
+					nr_token++;
 				}
-
+				else if(token_type != NOTYPE) {
+					tokens[nr_token].type = token_type;
+					tokens[nr_token].str[0] = '\0'; // 清空字符串
+					nr_token++;
+				}
+				matched=1;
 				break;
 			}
 		}
@@ -219,25 +223,26 @@ static int dominant_op(int p,int q){
 		int i;
 
 		for (i = p; i <= q; i++) {
-			if (tokens[i].type == LPAREN) { 
+			int t=tokens[i].type;
+			 if (t == LPAREN) { 
 				balance++; 
+				continue; 
 			}
-			if (tokens[i].type == RPAREN) { 
+			if (t == RPAREN) { 
 				balance--; 
+				continue; 
 			}
-			if(balance < 0){
-				return -1;
-			}
-			if(balance == 0 && is_binary_op_token(tokens[i].type)) {
-				int pri=precedence(tokens[i].type);
+			if(balance!=0) continue; //跳过括号内的运算符
+
+			if(is_binary_op_token(t)){
+				int pri=precedence(t);
 				if(pri<=min_pri){
 					min_pri=pri;
 					op=i;
 				}
 			}
-			
 		}
-		if(balance !=0){
+		if(balance!=0){
 			return -1;
 		}
 		return op;
@@ -248,8 +253,10 @@ static bool check_parentheses(int p, int q) {
     int i;
     int balance = 0;
 
-    if (p > q) return false;
-    if (tokens[p].type != LPAREN || tokens[q].type != RPAREN) return false;
+    if (p > q) 
+		return false;
+    if (tokens[p].type != LPAREN || tokens[q].type != RPAREN) 
+		return false;
 
     for (i = p; i <= q; i++) {
         if (tokens[i].type == LPAREN) {
@@ -294,6 +301,8 @@ uint32_t vaddr_read(uint32_t addr, int len) {
 
 
 static uint32_t eval(int p,int q,bool *success){
+	uint32_t val1,val2,addr,tmp;
+	int op;
 	/* TODO: Insert codes to evaluate the expression. */
 	if(p>q)
 	{
@@ -303,14 +312,14 @@ static uint32_t eval(int p,int q,bool *success){
 
 
 	//区间只有一个token
-	else if(p==q){
+	if(p==q){
 		*success=true;
 		switch(tokens[p].type){
 			case NUM:
-				return strtoul(tokens[p].str,NULL,10);
+				return (uint32_t)strtoul(tokens[p].str,NULL,10);
 			case HEX:
 			{
-				return strtoul(tokens[p].str,NULL,16);
+				return (uint32_t)strtoul(tokens[p].str,NULL,16);
 			}
 			case REG:
 			{
@@ -318,24 +327,23 @@ static uint32_t eval(int p,int q,bool *success){
 			}
 			default:
 				*success=false;
-				printf("Error: Invalid single token at position %d\n", p);
 				return 0;
 			
 		}
 	}
+
 	if(check_parentheses(p,q)) {
 		return eval(p+1,q-1,success);
 	}
 
 	
-	int op=dominant_op(p,q);
+	op=dominant_op(p,q);
 
 		if(op!=-1){
 
-			uint32_t val1=eval(p,op-1,success);
+			val1=eval(p,op-1,success);
 			if(!*success) return 0;
-
-			uint32_t val2=eval(op+1,q,success);
+			val2=eval(op+1,q,success);
 			if(!*success) return 0;
 
 			switch(tokens[op].type){
@@ -352,20 +360,12 @@ static uint32_t eval(int p,int q,bool *success){
 		}
 		else{
 			if(tokens[p].type==NEG){
-				if(p+1>q){
-					*success=false;
-					return 0;
-				}
-				uint32_t val=eval(p+1,q,success);
+				tmp=eval(p+1,q,success);
 				if(!*success) return 0;
-				return (uint32_t)(-((int32_t)val));
+				return (uint32_t)(-(int32_t)tmp);
 			}
-			else if(tokens[p].type==DEREF || p==q){
-				if(p+1>q){
-					*success=false;
-					return 0;
-				}
-				uint32_t addr=eval(p+1,q,success);
+			else if(tokens[p].type==DEREF){
+				addr=eval(p+1,q,success);
 				if(!*success) return 0;
 				return vaddr_read(addr,4);
 			}
@@ -375,6 +375,9 @@ static uint32_t eval(int p,int q,bool *success){
 				return 0;
 			}
 		}
+
+		*success=false;
+		return 0;
 }
 
 //将字符串转换为可解析的 token 数组
@@ -386,15 +389,5 @@ uint32_t expr(char *e,bool *success){
     }
 
     mark_unary_operators();
-
-    *success=true;
-    uint32_t val = eval(0, nr_token-1, success);
-
-    // 调试输出 signed/unsigned 两种形式
-    printf("expr result = %d (signed), %u (unsigned)\n", (int32_t)val, val);
-
-    return val;
+	return eval(0,nr_token-1,success);
 }
-
-
-
