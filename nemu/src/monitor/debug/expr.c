@@ -65,7 +65,7 @@ static bool make_token(char *e);
 static void mark_unary_operators();
 static int precedence(int type);
 static bool is_binary_op_token(int type);
-static bool check_parentheses(int p,int q);
+static int check_parentheses(int p,int q);
 static int dominant_op(int p,int q);
 static uint32_t eval(int p,int q,bool *success);
 uint32_t expr(char *e,bool *success);
@@ -217,65 +217,61 @@ static int precedence(int type)	{
 }
 
 
-static int dominant_op(int p,int q){
-		int op=-1;               //当前找到的主导运算符下标，初始化 -1 表示未找到
-		int min_pri=100;          //当前最小优先级（初始比任何实际运算符优先级都大）
-		int balance=0;           //括号平衡计数
-		int i;
+/* 检查 p 和 q 的 token 是否是包裹整个子表达式的一对括号 */
+static int check_parentheses(int p, int q) {
+    if (tokens[p].type != LPAREN || tokens[q].type != RPAREN) {
+        return 0;
+    }
 
-		for (i = p; i <= q; i++) {
-			int t=tokens[i].type;
-			 if (t == LPAREN) { 
-				balance++; 
-				continue; 
-			}
-			if (t == RPAREN) { 
-				balance--; 
-				continue; 
-			}
-			if(balance!=0) continue; //跳过括号内的运算符
-
-			if(is_binary_op_token(t)){
-				int pri=precedence(t);
-				if(pri<=min_pri){
-					min_pri=pri;
-					op=i;
-				}
-			}
-		}
-		if(balance!=0){
-			return -1;
-		}
-		return op;
-}
-
-// 判断 tokens[p..q] 是否被一对括号完整包裹
-static bool check_parentheses(int p, int q) {
-    int i;
     int balance = 0;
-
-    if (p > q) 
-		return false;
-    if (tokens[p].type != LPAREN || tokens[q].type != RPAREN) 
-		return false;
-
-    for (i = p; i <= q; i++) {
+    int i;
+    for (i = p + 1; i < q; i++) {
         if (tokens[i].type == LPAREN) {
             balance++;
-        }
-        else if (tokens[i].type == RPAREN) {
-            balance--;
-            if (balance < 0) {
-                return false; // 括号不匹配
+        } else if (tokens[i].type == RPAREN) {
+            if (balance == 0) {
+                return 0;  /* 提前闭合了，不是整体包裹 */
             }
-            if (balance == 0 && i < q) {
-                return false; // 最外层括号提前闭合，不是完整包裹
+            balance--;
+        }
+    }
+    return (balance == 0);
+}
+
+/* 找出 p..q 范围内的主导运算符 */
+static int dominant_op(int p, int q) {
+    int op = -1;
+    int min_pri = 100;
+    int balance = 0;
+    int i;
+
+    for (i = p; i <= q; i++) {
+        int type = tokens[i].type;
+
+        if (type == LPAREN) {
+            balance++;
+            continue;
+        }
+        if (type == RPAREN) {
+            balance--;
+            continue;
+        }
+        if (balance > 0) {
+            continue;
+        }
+
+        if (is_binary_op_token(type) || type == NEG || type == DEREF) {
+            int pri = precedence(type);
+            if (pri <= min_pri) {
+                min_pri = pri;
+                op = i;
             }
         }
     }
 
-    return balance == 0;
+    return op;
 }
+
 
 uint32_t reg_str2val(const char *s, bool *success) {
     *success = true;
