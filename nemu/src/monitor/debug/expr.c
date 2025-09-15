@@ -52,6 +52,25 @@ static regex_t re[NR_REGEX];
  * Therefore we compile them only once before any usage.
  */
 
+ //定义类型token
+typedef struct token {
+	int type;
+	char str[32];
+} Token;
+
+Token tokens[1024];
+int nr_token;
+
+static bool make_token(char *e);
+static void mark_unary_operators();
+static int precedence(int type);
+static bool is_binary_op_token(int type);
+static bool check_parentheses(int p,int q);
+static int dominant_op(int p,int q);
+static uint32_t eval(int p,int q,bool *success);
+uint32_t expr(char *e,bool *success);
+uint32_t reg_str2val(const char *s, bool *success);
+
 //初始化正则表达式数组，为后续的词法分析做准备。
 void init_regex() {
 	char error_msg[128];
@@ -66,19 +85,8 @@ void init_regex() {
 	}
 }
 
-//定义类型token
-typedef struct token {
-	int type;
-	char str[32];
-} Token;
-
-Token tokens[1024];
-int nr_token;
-int i;
-
-static bool is_binary_op_token(int type);
-
 static void mark_unary_operators() {
+	int i;
 	for (i = 0; i < nr_token; i++) {
 		if (tokens[i].type == MINUS) {
 			if (i == 0 || tokens[i - 1].type == LPAREN || is_binary_op_token(tokens[i - 1].type)) {
@@ -184,31 +192,6 @@ static bool is_binary_op_token(int type){
 }
 
 
-//括号匹配
-static bool check_parentheses(int p,int q){
-	int i;
-	int balance=0;
-
-	if(p>q)
-		return false;
-	if(tokens[p].type!=LPAREN || tokens[q].type!=RPAREN )
-		return false;
-	
-
-	for(i=p;i<=q;i++){
-		if(tokens[i].type==LPAREN)
-			balance++;
-		else if(tokens[i].type==RPAREN)
-			balance--;
-		
-		if(balance==0 && i<q)
-			return false;
-		if (balance < 0) 
-			return false;
-	}
-
-	return balance==0;
-}
 
 //确定运算顺序
 static int precedence(int type)	{
@@ -258,6 +241,32 @@ static int dominant_op(int p,int q){
 			return -1;
 		}
 		return op;
+}
+
+// 判断 tokens[p..q] 是否被一对括号完整包裹
+static bool check_parentheses(int p, int q) {
+    int i;
+    int balance = 0;
+
+    if (p > q) return false;
+    if (tokens[p].type != LPAREN || tokens[q].type != RPAREN) return false;
+
+    for (i = p; i <= q; i++) {
+        if (tokens[i].type == LPAREN) {
+            balance++;
+        }
+        else if (tokens[i].type == RPAREN) {
+            balance--;
+            if (balance < 0) {
+                return false; // 括号不匹配
+            }
+            if (balance == 0 && i < q) {
+                return false; // 最外层括号提前闭合，不是完整包裹
+            }
+        }
+    }
+
+    return balance == 0;
 }
 
 uint32_t reg_str2val(const char *s, bool *success) {
