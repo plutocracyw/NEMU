@@ -13,7 +13,7 @@
 uint32_t vaddr_read(uint32_t addr, int len);
 
 enum {
-  NOTYPE = 256, EQ, NUM, HEX, REG, NEQ, AND, OR, NEG, DEREF,  
+  NOTYPE = 256, EQ, NUM, HEX, REG, NEQ, AND, OR, NEG, DEREF,NOT,
   PLUS = '+', MINUS = '-', MUL = '*', DIV = '/', LPAREN = '(', RPAREN = ')'
 };
 
@@ -42,6 +42,9 @@ rules[] = {
 	{"0[xX][0-9a-fA-F]+", HEX}, // 十六进制数
 	{"[0-9]+", NUM},         // 十进制数
 	{"\\$[a-zA-Z]+", REG},   // 寄存器
+	{"!", NOT},              // 逻辑非
+
+
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
@@ -210,6 +213,7 @@ static int precedence(int type)	{
 			case DIV: return 5;
     		case NEG: return 6;
 			case DEREF: return 6;
+			case NOT: return 6;
     		
 			default: return 7;
 		}
@@ -365,6 +369,11 @@ static uint32_t eval(int p,int q,bool *success){
 				if(!*success) return 0;
 				return vaddr_read(addr,4);
 			}
+			else if (tokens[p].type == NOT) {
+				tmp = eval(p+1,q,success);
+				if(!*success) return 0;
+				return (tmp == 0 ? 1 : 0);
+    		}
 			else{
 				*success=false;
 				printf("Error: no dominant operator found in p=%d q=%d\n", p, q);
