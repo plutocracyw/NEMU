@@ -1,5 +1,6 @@
 #include "monitor/monitor.h"
 #include "cpu/helper.h"
+#include "monitor/watchpoint.h" 
 #include <setjmp.h>
 
 /* The assembly code of instructions executed is only output to the screen
@@ -35,53 +36,55 @@ void do_int3() {
 }
 
 /* Simulate how the CPU works. */
+/* Simulate how the CPU works. */
 void cpu_exec(volatile uint32_t n) {
-	if(nemu_state == END) {
-		printf("Program execution has ended. To restart the program, exit NEMU and run again.\n");
-		return;
-	}
-	nemu_state = RUNNING;
+    if(nemu_state == END) {
+        printf("Program execution has ended. To restart the program, exit NEMU and run again.\n");
+        return;
+    }
+    nemu_state = RUNNING;
 
 #ifdef DEBUG
-	volatile uint32_t n_temp = n;
+    volatile uint32_t n_temp = n;
 #endif
 
-	setjmp(jbuf);
+    setjmp(jbuf);
 
-	for(; n > 0; n --) {
+    for(; n > 0; n --) {
 #ifdef DEBUG
-		swaddr_t eip_temp = cpu.eip;
-		if((n & 0xffff) == 0) {
-			/* Output some dots while executing the program. */
-			fputc('.', stderr);
-		}
+        swaddr_t eip_temp = cpu.eip;
+        if((n & 0xffff) == 0) {
+            /* Output some dots while executing the program. */
+            fputc('.', stderr);
+        }
 #endif
 
-		/* Execute one instruction, including instruction fetch,
-		 * instruction decode, and the actual execution. */
-		int instr_len = exec(cpu.eip);
-
-		cpu.eip += instr_len;
+        /* Execute one instruction, including fetch, decode, and execution */
+        int instr_len = exec(cpu.eip);
+        cpu.eip += instr_len;
 
 #ifdef DEBUG
-		print_bin_instr(eip_temp, instr_len);
-		strcat(asm_buf, assembly);
-		Log_write("%s\n", asm_buf);
-		if(n_temp < MAX_INSTR_TO_PRINT) {
-			printf("%s\n", asm_buf);
-		}
+        print_bin_instr(eip_temp, instr_len);
+        strcat(asm_buf, assembly);
+        Log_write("%s\n", asm_buf);
+        if(n_temp < MAX_INSTR_TO_PRINT) {
+            printf("%s\n", asm_buf);
+        }
 #endif
 
-		/* TODO: check watchpoints here. */
-
+        /* --- check watchpoints after each instruction --- */
+        if (check_watchpoints()) {
+            nemu_state = STOP;
+            return;  // 停止 CPU 执行
+        }
 
 #ifdef HAS_DEVICE
-		extern void device_update();
-		device_update();
+        extern void device_update();
+        device_update();
 #endif
 
-		if(nemu_state != RUNNING) { return; }
-	}
+        if(nemu_state != RUNNING) { return; }
+    }
 
-	if(nemu_state == RUNNING) { nemu_state = STOP; }
+    if(nemu_state == RUNNING) { nemu_state = STOP; }
 }

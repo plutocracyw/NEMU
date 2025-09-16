@@ -7,7 +7,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-void cpu_exec(uint32_t);
+
+
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 
@@ -138,35 +139,19 @@ static int cmd_x(char *args){
 
 static int cmd_w(char *args) {
     if (args == NULL) {
-        printf("Usage: w EXPRESSION\n");
+        printf("Usage: w EXPR\n");
         return 0;
     }
 
-    bool success;
-    WP* wp = new_wp();
-    if (wp == NULL) {     //监视点池已满 
-        printf("Failed to create new watchpoint. The pool might be full.\n");
+    WP *wp = new_wp(args);
+    if (wp == NULL) {
+        printf("Failed to create new watchpoint.\n");
         return 0;
     }
-
-    if (strlen(args) >= sizeof(wp->expr)) {
-        printf("Error: Expression is too long (max %zu characters).\n", sizeof(wp->expr) - 1);
-        delete_wp(wp->NO);
-        return 0;
-    }
-    strcpy(wp->expr, args); 
-
-
-    wp->value = expr(args, &success);
-    if (!success) {
-        printf("Invalid expression. Deleting the watchpoint.\n");
-        delete_wp(wp->NO);
-        return 0;
-    }
-
-    printf("Watchpoint %d: %s\n", wp->NO, wp->expr);
     return 0;
 }
+
+
 
 static int cmd_d(char *args) {
 	if (args == NULL) {
