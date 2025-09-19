@@ -1,3 +1,4 @@
+//使用 x86 Linux 系统调用打印字符串
 #include "trap.h"
 
 const char str[] = "Hello, world!\n";

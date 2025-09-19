@@ -4,7 +4,7 @@
 
 CC := gcc
 LD := ld
-CFLAGS := -MMD -Wall -Werror -c
+CFLAGS := -MMD -Wall -Werror -c -Inemu/include
 
 LIB_COMMON_DIR := lib-common
 LIBC_INC_DIR := $(LIB_COMMON_DIR)/uclibc/include
@@ -53,7 +53,7 @@ clean: clean-cpp
 
 ##### some convinient rules #####
 
-USERPROG := obj/testcase/mov
+USERPROG := obj/testcase/mov-c
 ENTRY := $(USERPROG)
 
 entry: $(ENTRY)

@@ -36,3 +36,12 @@
 
 #include "special/special.h"
 
+#include "data-mov/push.h"
+
+#include "control/call.h"
+
+#include "control/ret.h"
+
+#include "control/je.h"
+
+#include "arith/cmp.h"

@@ -1,3 +1,4 @@
+//测试 递归阶乘函数 的正确性
 #include "trap.h"
 
 int f[15];

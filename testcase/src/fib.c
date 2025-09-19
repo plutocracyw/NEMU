@@ -1,3 +1,4 @@
+//验证斐波那契数列计算
 #include "trap.h"
 
 #define N 40

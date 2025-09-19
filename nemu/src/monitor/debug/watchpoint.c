@@ -144,10 +144,7 @@ bool check_watchpoints(void) {
         triggered = true;
         wp->value = new_val; 
         break;
-}
-
-
-
+    }
         wp->value = new_val;
         wp = wp->next;
     }
