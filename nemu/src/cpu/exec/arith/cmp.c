@@ -1,30 +1,21 @@
-#include "cmp.h"
 #include "cpu/exec/helper.h"
-#include "cpu/eflags.h"
-#include "cpu/decode/modrm.h"
 
-make_helper(cmp_b) {
-    uint8_t src=instr_fetch(eip+1,1);
-    uint8_t dest=cpu.eax & 0xff;
-    uint16_t result=(uint16_t)dest-(uint16_t)src;
+#define DATA_BYTE 1
+#include "cmp-template.h"
+#undef DATA_BYTE
 
-    cpu.eflags.CF=(result>>8) & 1;
-    cpu.eflags.ZF=((uint8_t)result==0);
-    cpu.eflags.SF=((uint8_t)result>>7) & 1;
-      cpu.eflags.OF = ((dest ^ src) & (dest ^ (uint8_t)result) & 0x80) ? 1 : 0;
+#define DATA_BYTE 2
+#include "cmp-template.h"
+#undef DATA_BYTE
 
-    return 2;
-}
+#define DATA_BYTE 4
+#include "cmp-template.h"
+#undef DATA_BYTE
 
-make_helper(cmp_v) {
-    uint32_t src=instr_fetch(eip+1,4);
-    uint32_t dest=cpu.eax;
-    uint64_t result=(uint64_t)dest-(uint64_t)src;
+/* for instruction encoding overloading */
 
-    cpu.eflags.CF=(result>>32)&1;
-    cpu.eflags.ZF=((uint32_t)result==0);
-    cpu.eflags.SF=((uint32_t)result>>31)&1;
-    cpu.eflags.OF=(((dest^src)&(dest^(uint32_t)result))>>31)&1;
-
-    return 5;
-}
+make_helper_v(cmp_i2a)
+make_helper_v(cmp_i2rm)
+make_helper_v(cmp_si2rm)
+make_helper_v(cmp_r2rm)
+make_helper_v(cmp_rm2r)

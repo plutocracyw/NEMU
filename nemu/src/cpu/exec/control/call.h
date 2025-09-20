@@ -3,7 +3,7 @@
 
 #include "cpu/helper.h"  
 
-make_helper(call);
-make_helper(call_rm_v);
+make_helper(call_si);
+make_helper(call_rm);
 
 #endif

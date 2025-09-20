@@ -32,7 +32,16 @@ make_helper(concat(decode_si_, SUFFIX)) {
 	 *
 	op_src->simm = ???
 	 */
-	panic("please implement me");
+	  uint32_t imm = instr_fetch(eip, DATA_BYTE);
+
+    // 根据 DATA_BYTE 做符号扩展
+    if (DATA_BYTE == 1) {
+        op_src->simm = (int8_t)imm;
+    } else if (DATA_BYTE == 2) {
+        op_src->simm = (int16_t)imm;
+    } else { // DATA_BYTE == 4
+        op_src->simm = (int32_t)imm;
+    }
 
 	op_src->val = op_src->simm;
 
