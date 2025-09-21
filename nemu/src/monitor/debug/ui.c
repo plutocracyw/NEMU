@@ -190,27 +190,20 @@ cmd_table [] = {
     { "d", "Delete a watchpoint. Usage: d N", cmd_d },
 
 
-	/* TODO: Add more commands */
-
 };
 
 #define NR_CMD (sizeof(cmd_table) / sizeof(cmd_table[0]))
 
 static int cmd_help(char *args) {
-	/* extract the first argument */
-	//继续从主循环已部分解析的字符串中获取 "help" 后面的参数
 	char *arg = strtok(NULL, " ");
 	int i;
 
 	if(arg == NULL) {
-		/* no argument given */
-		// 遍历整个 cmd_table,打印所有命令的名字和描述
 		for(i = 0; i < NR_CMD; i ++) {
 			printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);
 		}
 	}
 	else {
-		//遍历 cmd_table，查找匹配的命令
 		for(i = 0; i < NR_CMD; i ++) {
 			if(strcmp(arg, cmd_table[i].name) == 0) {
 				printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);

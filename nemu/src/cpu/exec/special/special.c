@@ -2,7 +2,6 @@
 #include "monitor/monitor.h"
 
 make_helper(inv) {
-	/* invalid opcode */
 
 	uint32_t temp[8];
 	temp[0] = instr_fetch(eip, 4);
@@ -23,7 +22,6 @@ make_helper(inv) {
 
 	assert(0);
 }
-
 make_helper(nemu_trap) {
 	print_asm("nemu trap (eax = %d)", cpu.eax);
 

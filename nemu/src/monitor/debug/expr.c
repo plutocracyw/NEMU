@@ -30,9 +30,6 @@ static struct rule {
 
 rules[] = {
 
-	/* TODO: Add more rules.
-	 * Pay attention to the precedence level of different rules.
-	 */
 
 	{" +",   NOTYPE},       // 空格
 	{"\\+",   PLUS},         // +(转义字符)
@@ -314,7 +311,6 @@ uint32_t reg_str2val(const char *s, bool *success) {
 static uint32_t eval(int p,int q,bool *success){
 	uint32_t val1,val2,addr,tmp;
 	int op;
-	/* TODO: Insert codes to evaluate the expression. */
 	if(p>q)
 	{
 		*success=false;
