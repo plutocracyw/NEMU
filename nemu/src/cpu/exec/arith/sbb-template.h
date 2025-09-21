@@ -7,9 +7,9 @@ static void do_execute () {
 	OPERAND_W(op_dest, result);
 
 	/* TODO: Update EFLAGS. */
-	update_eflags_pf_zf_sf((DATA_TYPE_S)result);
-	cpu.eflags.CF = result < op_dest->val;
-	cpu.eflags.OF = MSB(~(op_dest->val ^ op_src->val) & (op_dest->val ^ result));
+	update_eflags_pf_zf_sf((DATA_TYPE_S)result);  // 更新PF, ZF, SF
+    cpu.eflags.CF = result < op_dest->val; // 更新CF
+    cpu.eflags.OF = MSB(~(op_dest->val ^ op_src->val) & (op_dest->val ^ result));  // 更新OF
 
 	print_asm_template2();
 }

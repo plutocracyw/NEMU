@@ -18,4 +18,3 @@ make_helper(ret_i) {
 
 	return 2 + 1;
 }
-

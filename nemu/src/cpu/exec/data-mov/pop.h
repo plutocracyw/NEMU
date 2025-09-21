@@ -4,6 +4,5 @@
 #include "cpu/exec/helper.h"
 
 make_helper(pop_r_v);
-make_helper(pop_rm_v);
 
 #endif // __POP_H__
