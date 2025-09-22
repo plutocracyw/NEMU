@@ -21,7 +21,8 @@ make_helper(inv) {
 * Every line of untested code is always wrong!\33[0m\n\n", logo);
 
 	assert(0);
-}
+} 
+
 make_helper(nemu_trap) {
 	print_asm("nemu trap (eax = %d)", cpu.eax);
 

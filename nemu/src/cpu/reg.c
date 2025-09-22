@@ -41,6 +41,8 @@ void reg_test() {
 
 	assert(eip_sample == cpu.eip);
 }
+
+/*TODO: Show register files*/
 void display_reg() {
 	int i;
 	for(i = 0; i < 8; i ++) {
@@ -50,6 +52,7 @@ void display_reg() {
 	printf("%s\t\t0x%08x\t\t%d\n", "eip", cpu.eip, cpu.eip);
 }
 
+/* TODO: Get the value of register */
 uint32_t get_reg_val(const char *s, bool *success) {
 	int i;
 	*success = true;
@@ -78,3 +81,4 @@ uint32_t get_reg_val(const char *s, bool *success) {
 	*success = false;
 	return 0;
 }
+

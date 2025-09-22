@@ -1,8 +1,11 @@
 #include "trap.h"
 #include "FLOAT.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <assert.h>
 
-/* solve 0.5x^2 + 0.5x - 0.5 = 0 */
-
+/* solve 0.5x^2 + 0.5x - 0.5 = 0 
+*/
 int main() {
 	FLOAT a = f2F(0.5);
 	FLOAT b = f2F(0.5);
@@ -19,6 +22,5 @@ int main() {
 
 	nemu_assert(Fabs(x1_ans - x1) < f2F(1e-4));
 	nemu_assert(Fabs(x2_ans - x2) < f2F(1e-4));
-
 	return 0;
 }
