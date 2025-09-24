@@ -39,3 +39,7 @@ make_helper(nemu_trap) {
 	return 1;
 }
 
+make_helper(salc) {
+    cpu.gpr[0]._8[0] = cpu.eflags.CF ? 0xFF : 0x00; // AL = CF ? 0xFF : 0x00
+    return 1; // 指令长度为1字节
+}

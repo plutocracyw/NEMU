@@ -2,7 +2,7 @@
 #include "cpu/decode/modrm.h"
 
 #include "all-instr.h"
-   
+
 typedef int (*helper_fun)(swaddr_t);
 static make_helper(_2byte_esc);
 
@@ -80,7 +80,7 @@ make_group(group4,
 /* 0xff */
 make_group(group5,
 	inv, dec_rm_v, call_rm, inv, 
-	jmp_rm_l, inv, inv, inv)
+	jmp_rm_l, inv, push_rm_v, inv)
 
 make_group(group6,
 	inv, inv, inv, inv, 
@@ -91,6 +91,7 @@ make_group(group7,
 	inv, inv, inv, inv)
 
 
+/* TODO: Add more instructions!!! */
 
 helper_fun opcode_table [256] = {
 /* 0x00 */	inv, add_r2rm_v, inv, add_rm2r_v,
