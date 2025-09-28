@@ -2,6 +2,7 @@
 #include "monitor/monitor.h"
 
 make_helper(inv) {
+	/* invalid opcode */
 
 	uint32_t temp[8];
 	temp[0] = instr_fetch(eip, 4);
@@ -21,7 +22,7 @@ make_helper(inv) {
 * Every line of untested code is always wrong!\33[0m\n\n", logo);
 
 	assert(0);
-} 
+}
 
 make_helper(nemu_trap) {
 	print_asm("nemu trap (eax = %d)", cpu.eax);
@@ -37,9 +38,4 @@ make_helper(nemu_trap) {
 	}
 
 	return 1;
-}
-
-make_helper(salc) {
-    cpu.gpr[0]._8[0] = cpu.eflags.CF ? 0xFF : 0x00; // AL = CF ? 0xFF : 0x00
-    return 1; // 指令长度为1字节
 }

@@ -147,7 +147,7 @@ static int cmd_w(char *args) {
     if (wp == NULL) {
         printf("Failed to create new watchpoint.\n");
         return 0;
-    }
+    } 
     return 0;
 }
 

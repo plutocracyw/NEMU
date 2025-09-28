@@ -1,4 +1,3 @@
-//测试 按位操作函数 getbit 和 setbit 的正确性
 #include "trap.h"
 
 typedef unsigned char uint8_t;

@@ -1,4 +1,3 @@
-//add指令
 #include "trap.h"
 
 long long add(long long a, long long b) {

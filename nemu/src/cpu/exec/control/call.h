@@ -1,7 +1,5 @@
-#ifndef _CALL_H_
-#define _CALL_H_
-
-#include "cpu/helper.h"  
+#ifndef __CALL_H__
+#define __CALL_H__
 
 make_helper(call_si);
 make_helper(call_rm);

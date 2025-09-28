@@ -2,18 +2,17 @@
 
 #define instr add
 
-static void do_execute() {
-    DATA_TYPE result = op_dest->val + op_src->val;
-    OPERAND_W(op_dest, result);
-    // 更新标志位
-    update_eflags_pf_zf_sf((DATA_TYPE_S)result);
-    cpu.eflags.CF = result < op_dest->val; // CF
-   cpu.eflags.OF = MSB(~(op_dest->val ^ op_src->val) & (op_dest->val ^ result));
+static void do_execute () {
+	DATA_TYPE result = op_dest->val + op_src->val;
+	OPERAND_W(op_dest, result);
 
-    print_asm_template2();
+	update_eflags_pf_zf_sf((DATA_TYPE_S)result);
+	cpu.eflags.CF = result < op_dest->val;
+	cpu.eflags.OF = MSB(~(op_dest->val ^ op_src->val) & (op_dest->val ^ result));
+
+	print_asm_template2();
 }
 
-// 生成各种指令形式
 make_instr_helper(i2a)
 make_instr_helper(i2rm)
 #if DATA_BYTE == 2 || DATA_BYTE == 4

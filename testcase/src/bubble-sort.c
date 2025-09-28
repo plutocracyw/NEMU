@@ -1,4 +1,3 @@
-//在 NEMU 里测试 冒泡排序算法 是否正确
 #include "trap.h"
 
 #define N 100

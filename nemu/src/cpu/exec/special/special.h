@@ -3,5 +3,5 @@
 
 make_helper(inv);
 make_helper(nemu_trap);
-make_helper(salc);
+
 #endif

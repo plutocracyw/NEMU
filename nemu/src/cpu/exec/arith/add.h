@@ -1,7 +1,6 @@
 #ifndef __ADD_H__
 #define __ADD_H__
 
-#include "cpu/exec/helper.h"
 
 make_helper(add_i2a_v);
 make_helper(add_i2rm_v);
