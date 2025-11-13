@@ -20,7 +20,7 @@ extern uint8_t *hw_mem;
 uint32_t swaddr_read(swaddr_t, size_t);
 uint32_t lnaddr_read(lnaddr_t, size_t);
 uint32_t hwaddr_read(hwaddr_t, size_t);
-void swaddr_write(swaddr_t, size_t, uint32_t);
+void swaddr_write(swaddr_t addr, size_t len, uint32_t data);
 void lnaddr_write(lnaddr_t, size_t, uint32_t);
 void hwaddr_write(hwaddr_t, size_t, uint32_t);
 

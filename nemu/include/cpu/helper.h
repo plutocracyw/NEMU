@@ -26,5 +26,14 @@ extern Operands ops_decoded;
 #define op_src2 (&ops_decoded.src2)
 #define op_dest (&ops_decoded.dest)
 
+/*IA-32 分段机制相关*/
+
+make_helper(lgdt_v);
+
+make_helper(mov_r2cr);
+
+make_helper(mov_cr2r);
+
+make_helper(mov_rm2strg);
 
 #endif

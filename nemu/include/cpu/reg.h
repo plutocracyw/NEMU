@@ -3,11 +3,41 @@
 
 #include "common.h"
 
+// ====== 系统表寄存器类型定义 ======
+typedef struct {
+    uint16_t limit; // 表界限
+    uint32_t base;  // 表基址
+} GDTR_type;        // 适用于 GDT 和 IDT
+
+// ====== 段寄存器隐藏部分 ======
+typedef struct {
+    uint16_t selector; // 段选择子
+    uint32_t base;     // 段基址
+    uint32_t limit;    // 段界限
+    uint8_t  present;  // 段存在标志
+} SegReg;
+
+// ====== 控制寄存器 CR0 ======
+typedef union {
+    struct {
+        uint32_t PE    :1; // Protection Enable
+        uint32_t MP    :1;
+        uint32_t EM    :1;
+        uint32_t TS    :1;
+        uint32_t ET    :1;
+        uint32_t NE    :1;
+        uint32_t pad0  :25;
+    };
+    uint32_t val;
+} CR0_type;
+
+// ====== 通用寄存器索引 ======
 enum { R_EAX, R_ECX, R_EDX, R_EBX, R_ESP, R_EBP, R_ESI, R_EDI };
 enum { R_AX, R_CX, R_DX, R_BX, R_SP, R_BP, R_SI, R_DI };
 enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
+enum { R_CS, R_DS, R_ES, R_SS };
 
-
+// ====== CPU 状态结构 ======
 typedef struct {
     union {
         union {
@@ -46,14 +76,20 @@ typedef struct {
         uint32_t val;
     } eflags;
 
-} CPU_state;
+    // ====== 系统相关寄存器 ======
+    CR0_type CR0;          // 控制寄存器
+    GDTR_type GDTR;        // GDT 寄存器
+    GDTR_type IDTR;        // ✅ 新增：IDT 寄存器
+    SegReg CS, DS, ES, SS; // 段寄存器隐藏部分
 
+} CPU_state;
 
 extern CPU_state cpu;
 
+// ====== 通用寄存器访问宏 ======
 static inline int check_reg_index(int index) {
-	assert(index >= 0 && index < 8);
-	return index;
+    assert(index >= 0 && index < 8);
+    return index;
 }
 
 #define reg_l(index) (cpu.gpr[check_reg_index(index)]._32)

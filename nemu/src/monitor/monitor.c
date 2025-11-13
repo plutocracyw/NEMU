@@ -73,7 +73,8 @@ static void load_entry() {
 	ret = fread(hwa_to_va(ENTRY_START), file_size, 1, fp);
 	assert(ret == 1);
 	fclose(fp);
-}
+}  // restart
+
 
 void restart() {
 	/* Perform some initialization to restart a program */
@@ -91,4 +92,26 @@ void restart() {
 	/* Initialize DRAM. */
 	init_ddr3();
 	init_cache();
+
+
+	/*IA-32 分段机制相关寄存器初始化*/
+	// 初始化 CR0（实模式启动）
+    cpu.CR0.val = 0;
+
+    // 初始化 GDTR
+    cpu.GDTR.base = 0x0;
+    cpu.GDTR.limit = 0x0;
+
+    // 初始化段寄存器 CS/DS/ES/SS
+    SegReg *segs[4] = { &cpu.CS, &cpu.DS, &cpu.ES, &cpu.SS };
+	int i;
+    for(i = 0; i < 4; i++) {
+        segs[i]->selector = 0x0;
+        segs[i]->base = 0x0;
+        segs[i]->limit = 0xFFFFF; // 实模式允许最大 1MB
+        segs[i]->present = 1;     // 段有效
+    }
+
+    // 初始化 ESP
+    reg_l(R_ESP) = 0x0;
 }
