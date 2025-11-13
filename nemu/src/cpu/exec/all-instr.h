@@ -7,6 +7,7 @@
 #include "data-mov/leave.h"
 #include "data-mov/push.h"
 #include "data-mov/pop.h"
+#include "data-mov/mov_sreg.h"
 
 #include "arith/cmp.h"
 #include "arith/dec.h"
@@ -36,6 +37,7 @@
 #include "control/ret.h"
 #include "control/jcc.h"
 #include "control/jmp.h"
+#include "control/jmp_far.h"
 
 #include "string/rep.h"
 #include "string/scas.h"
@@ -46,3 +48,5 @@
 #include "misc/misc.h"
 
 #include "special/special.h"
+#include "special/lgdt.h"
+#include "special/mov_cr.h"

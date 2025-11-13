@@ -77,41 +77,83 @@ static void load_entry() {
 
 
 void restart() {
-	/* Perform some initialization to restart a program */
+    /* Perform some initialization to restart a program */
 #ifdef USE_RAMDISK
-	/* Read the file with name `argv[1]' into ramdisk. */
-	init_ramdisk();
+    /* Read the file with name `argv[1]' into ramdisk. */
+    init_ramdisk();
 #endif
 
-	/* Read the entry code into memory. */
-	load_entry();
+    /* Read the entry code into memory. */
+    load_entry();
 
-	/* Set the initial instruction pointer. */
-	cpu.eip = ENTRY_START;
+    /* Set the initial instruction pointer. */
+    cpu.eip = ENTRY_START;
 
-	/* Initialize DRAM. */
-	init_ddr3();
-	init_cache();
+    /* Initialize DRAM. */
+    init_ddr3();
+    init_cache();
 
+    /* ====== IA-32 分段机制相关寄存器初始化 ====== */
+    
+    /* 复位通用寄存器 */
+    cpu.eax = 0;
+    cpu.ecx = 0; 
+    cpu.edx = 0;
+    cpu.ebx = 0;
+    cpu.esp = 0x7C00;  // 典型实模式栈地址
+    cpu.ebp = 0;
+    cpu.esi = 0;
+    cpu.edi = 0;
 
-	/*IA-32 分段机制相关寄存器初始化*/
-	// 初始化 CR0（实模式启动）
-    cpu.CR0.val = 0;
+    /* 复位标志寄存器 */
+    cpu.eflags.val = 0x00000002;  // 位1保留为1
 
-    // 初始化 GDTR
-    cpu.GDTR.base = 0x0;
-    cpu.GDTR.limit = 0x0;
+    /* 初始化控制寄存器 CR0 - 实模式 */
+    cpu.CR0.val = 0x00000000;
+    cpu.CR0.PE = 0;  // 实模式
 
-    // 初始化段寄存器 CS/DS/ES/SS
-    SegReg *segs[4] = { &cpu.CS, &cpu.DS, &cpu.ES, &cpu.SS };
-	int i;
-    for(i = 0; i < 4; i++) {
-        segs[i]->selector = 0x0;
-        segs[i]->base = 0x0;
-        segs[i]->limit = 0xFFFFF; // 实模式允许最大 1MB
-        segs[i]->present = 1;     // 段有效
-    }
+    /* 初始化系统表寄存器 */
+    cpu.GDTR.base = 0;
+    cpu.GDTR.limit = 0;
+    cpu.IDTR.base = 0;
+    cpu.IDTR.limit = 0x3FF;
 
-    // 初始化 ESP
-    reg_l(R_ESP) = 0x0;
+    /* 初始化所有段寄存器 - 实模式 */
+    // CS - 代码段
+    cpu.CS.selector = 0;
+    cpu.CS.base = 0;
+    cpu.CS.limit = 0xFFFF;    // 实模式是64KB
+    cpu.CS.present = 1;
+
+    // DS - 数据段
+    cpu.DS.selector = 0;
+    cpu.DS.base = 0;
+    cpu.DS.limit = 0xFFFF;
+    cpu.DS.present = 1;
+
+    // ES - 附加段
+    cpu.ES.selector = 0;
+    cpu.ES.base = 0;
+    cpu.ES.limit = 0xFFFF;
+    cpu.ES.present = 1;
+
+    // SS - 堆栈段
+    cpu.SS.selector = 0;
+    cpu.SS.base = 0;
+    cpu.SS.limit = 0xFFFF;
+    cpu.SS.present = 1;
+
+    // FS - 附加段
+    cpu.FS.selector = 0;
+    cpu.FS.base = 0;
+    cpu.FS.limit = 0xFFFF;
+    cpu.FS.present = 1;
+
+    // GS - 附加段
+    cpu.GS.selector = 0;
+    cpu.GS.base = 0;
+    cpu.GS.limit = 0xFFFF;
+    cpu.GS.present = 1;
+
+    printf("CPU restarted in Real Mode\n");
 }

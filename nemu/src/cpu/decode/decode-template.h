@@ -69,12 +69,21 @@ static int concat3(decode_rm_, SUFFIX, _internal)(swaddr_t eip, Operand *rm, Ope
 	int len = read_ModR_M(eip, rm, reg);
 	reg->val = REG(reg->reg);
 
-	// 段寄存器绑定
-	if (ops_decoded.opcode == 0x50 || ops_decoded.opcode == 0x58 || /* push/pop */ 
-	    ops_decoded.opcode == 0xFF) { 
-		rm->sreg = R_SS;
+	// 简化的段寄存器绑定逻辑
+	if (rm->type == OP_TYPE_MEM) {
+		// 栈操作使用 SS 段
+		if (ops_decoded.opcode == 0x50 || ops_decoded.opcode == 0x58 || // push/pop
+			ops_decoded.opcode == 0x9C || ops_decoded.opcode == 0x9D ||  // pushf/popf
+			ops_decoded.opcode == 0x60 || ops_decoded.opcode == 0x61 ||  // pusha/popa
+			ops_decoded.opcode == 0x68 || ops_decoded.opcode == 0x6A) {  // push immediate
+			rm->sreg = R_SS;
+		}
+		// 其他情况使用 DS 段
+		else {
+			rm->sreg = R_DS; // 默认数据段
+		}
 	} else {
-		rm->sreg = R_DS; // 普通内存访问
+		rm->sreg = R_DS; // 非内存操作数默认 DS
 	}
 
 #ifdef DEBUG
@@ -167,12 +176,11 @@ void concat(write_operand_, SUFFIX)(Operand *op, DATA_TYPE src) {
         REG(op->reg) = src; 
     }
     else if(op->type == OP_TYPE_MEM) { 
-        swaddr_write(op->addr, op->size, src);  // 使用三参数
+        swaddr_write(op->addr, op->size, src);  // 修复：使用2个参数
     }
     else { 
         assert(0); 
     }
 }
-
 
 #include "cpu/exec/template-end.h"

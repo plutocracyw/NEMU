@@ -22,25 +22,42 @@ int read_cache_L1(hwaddr_t addr);
 void write_cache_L1(hwaddr_t addr, size_t len, uint32_t data);
 
 static inline lnaddr_t seg_translate(swaddr_t addr, size_t len, uint8_t sreg) {
-	SegReg *seg = NULL;  
+    SegReg *seg = NULL;  
 
-	switch (sreg) {
-		case R_CS: seg = &cpu.CS; break;  
-		case R_DS: seg = &cpu.DS; break;
-		case R_ES: seg = &cpu.ES; break;
-		case R_SS: seg = &cpu.SS; break;
-		default: assert(0);
-	}
+    switch (sreg) {
+        case R_CS: seg = &cpu.CS; break;  
+        case R_DS: seg = &cpu.DS; break;
+        case R_ES: seg = &cpu.ES; break;
+        case R_SS: seg = &cpu.SS; break;
+        case R_FS: seg = &cpu.FS; break;
+        case R_GS: seg = &cpu.GS; break;
+        default: 
+            printf("Unknown segment register: %d\n", sreg);
+            assert(0);
+    }
 
 #ifdef IA32_SEG
-	if (cpu.CR0.PE) { // 
-		assert(seg->limit >= addr + len - 1); // 简单段界限检查
-		return seg->base + addr;
-	} else { // 实模式
-		return (seg->selector << 4) + addr;
-	}
+    if (cpu.CR0.PE) { // 保护模式
+        // 更健壮的段界限检查
+        if (addr > seg->limit) {
+            printf("Segment limit exceeded: sreg=%d, addr=0x%x, limit=0x%x\n",
+                   sreg, addr, seg->limit);
+            assert(0);
+        }
+        if (len > 1 && (addr + len - 1) > seg->limit) {
+            // 对于跨越边界的访问特殊处理
+            if (seg->limit != 0xFFFFFFFF) { // 不是4GB段
+                printf("Segment limit crossed: sreg=%d, addr=0x%x, len=%zu, limit=0x%x\n",
+                       sreg, addr, len, seg->limit);
+                assert(0);
+            }
+        }
+        return seg->base + addr;
+    } else { // 实模式
+        return seg->base + addr;  // 实模式下base已经正确设置
+    }
 #else
-	return addr;
+    return addr;
 #endif
 }
 
